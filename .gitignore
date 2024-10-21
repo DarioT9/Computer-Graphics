@@ -1,0 +1,26 @@
+# Cartella di build di CMake
+cmake-build-debug/
+cmake-build-release/
+
+# File di configurazione di CLion
+.idea/
+
+# File di compilazione
+*.o
+*.obj
+
+# Ma non ignorare i file .obj nella cartella degli asset
+!assets/**/*.obj
+
+# File eseguibili
+*.exe
+*.out
+
+# File di cache di CMake
+CMakeCache.txt
+CMakeLists.txt
+CMakeFiles/
+
+# File di configurazione generati da CMake
+cmake_install.cmake
+Makefile
