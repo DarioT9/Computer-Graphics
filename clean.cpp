@@ -57,7 +57,6 @@ protected:
 
 // **A10** Place here the variables for the Model, the five texture (diffuse, specular, normal map, emission and clouds) and the Descrptor Set
     Model MScooter;
-//    Texture TEarthDiffuse, TEarthSpecular, TEarthNormal, TEarthEmission, TEarthClouds;
     Texture TScooterBaseColor, TScooterNormal, TScooterHeight, TScooterMetallic, TScooterRoughness, TScooterAmbientOcclusion;
     DescriptorSet DSScooter;
 
@@ -123,7 +122,7 @@ protected:
 // **A10** Place here the initialization of the pipeline. Remember that it should use shaders in files
 //		"shaders/NormalMapVert.spv" and "shaders/NormalMapFrag.spv", it should receive the new VertexDescriptor you defined
 //		And should receive two DescriptorSetLayout, the first should be DSLGlobal, while the other must be the one you defined
-        PScooter.init(this, &VDScooter, "shaders/NormalMapVert.spv", "shaders/NormalMapFrag2.spv", {&DSLGlobal, &DSLScooter});
+        PScooter.init(this, &VDScooter, "shaders/NormalMapVert.spv", "shaders/NormalMapFrag.spv", {&DSLGlobal, &DSLScooter});
 
 // **A10** Place here the loading of the model. It should be contained in file "models/Sphere.gltf", it should use the
 //		Vertex descriptor you defined, and be of GLTF format.
@@ -170,7 +169,6 @@ protected:
         PScooter.create();
 
 // **A10** Add the descriptor set creation
-// Textures should be passed in the diffuse, specular, normal map, emission and clouds order.
 
 //        Texture TScooterAmbientOcclusion, TScooterBaseColor, TScooterNormal, TScooterHeight, TScooterMetallic, TScooterRoughness;
         DSScooter.init(this,&DSLScooter,{&TScooterBaseColor, &TScooterNormal, &TScooterHeight, &TScooterMetallic, &TScooterRoughness, &TScooterAmbientOcclusion});
@@ -229,7 +227,7 @@ protected:
         vkCmdDrawIndexed(commandBuffer,
                          static_cast<uint32_t>(MScooter.indices.size()), 1, 0, 0, 0);
 
-/
+
     }
 
     // Here is where you update the uniforms.
