@@ -11,6 +11,8 @@ cmake-build-release/
 
 # Ma non ignorare i file .obj nella cartella degli asset
 !assets/**/*.obj
+!models/**/*.obj
+
 
 # File eseguibili
 *.exe
