@@ -124,7 +124,7 @@ class A10 : public BaseProject {
 // **A10** Place here the variables for the Model, the five texture (diffuse, specular, normal map, emission and clouds) and the Descrptor Set
     Model MScooter;
 //    Texture TEarthDiffuse, TEarthSpecular, TEarthNormal, TEarthEmission, TEarthClouds;
-    Texture TScooterAmbientOcclusion, TScooterBaseColor, TScooterNormal, TScooterHeight, TScooterMetallic, TScooterRoughness;
+    Texture TScooterBaseColor, TScooterNormal, TScooterHeight, TScooterMetallic, TScooterRoughness, TScooterAmbientOcclusion;
     DescriptorSet DSScooter;
 
 	// Other application parameters
@@ -178,12 +178,12 @@ class A10 : public BaseProject {
 // **A10** Place here the initialization of the the DescriptorSetLayout
         DSLScooter.init(this, {
                 {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(ScooterMatricesUniformBufferObject), 1},  // Matrice uniforme del modello scooter
-                {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1},  // Texture Ambient Occlusion
-                {2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1},  // Texture Base Color
-                {3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 2, 1},  // Texture Normal
-                {4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3, 1},  // Texture Height
-                {5, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 4, 1},  // Texture Metallic
-                {6, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 5, 1},  // Texture Roughness
+                {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1},  // Texture Base Color
+                {2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1},  // Texture Normal
+                {3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 2, 1},  // Texture Height
+                {4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3, 1},  // Texture Metallic
+                {5, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 4, 1},  // Texture Roughness
+                {6, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 5, 1},  // Texture Ambient Occlusion
                 {7, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(ScooterParametersUniformBufferObject), 1},
         });
 
@@ -235,7 +235,7 @@ class A10 : public BaseProject {
 // **A10** Place here the initialization of the pipeline. Remember that it should use shaders in files
 //		"shaders/NormalMapVert.spv" and "shaders/NormalMapFrag.spv", it should receive the new VertexDescriptor you defined
 //		And should receive two DescriptorSetLayout, the first should be DSLGlobal, while the other must be the one you defined
-        PScooter.init(this, &VDScooter, "shaders/NormalMapVert.spv", "shaders/NormalMapFrag.spv", {&DSLGlobal, &DSLScooter});
+        PScooter.init(this, &VDScooter, "shaders/NormalMapVert.spv", "shaders/NormalMapFrag2.spv", {&DSLGlobal, &DSLScooter});
 
 
 		// Create models
@@ -253,28 +253,28 @@ class A10 : public BaseProject {
 		Tstars.init(this, "textures/constellation_figures.png");
 // **A10** Place here the loading of the four textures
 
-//        Texture TScooterAmbientOcclusion, TScooterBaseColor, TScooterNormal, TScooterHeight, TScooterMetallic, TScooterRoughness;
-        TScooterAmbientOcclusion.init(this, "textures/scooter/KR51AO.png");
-
-        TScooterBaseColor.init(this, "textures/scooter/KR51BaseColorModified.png");
+//        Texture TScooterBaseColor, TScooterNormal, TScooterHeight, TScooterMetallic, TScooterRoughness, TScooterAmbientOcclusion;
+        TScooterBaseColor.init(this, "textures/scooter/new/KR51BaseColor.png");
 
         // Normal map
         // note that it must add a special feature to support the normal map, in particular
         // the init function should be the following: .init(this, "path/to/textures/", VK_FORMAT_R8G8B8A8_UNORM);
-        TScooterNormal.init(this, "textures/scooter/KR51Normal.png", VK_FORMAT_R8G8B8A8_UNORM);
+        TScooterNormal.init(this, "textures/scooter/new/KR51Normal.png", VK_FORMAT_R8G8B8A8_UNORM);
 
-        TScooterHeight.init(this, "textures/scooter/KR51Height.png");
+        TScooterHeight.init(this, "textures/scooter/new/KR51Height.png");
 
-        TScooterMetallic.init(this, "textures/scooter/KR51Metallic.png");
+        TScooterMetallic.init(this, "textures/scooter/new/KR51Metallic.png");
 
-        TScooterRoughness.init(this, "textures/scooter/KR51Roughness.png");
+        TScooterRoughness.init(this, "textures/scooter/new/KR51Roughness.png");
+
+        TScooterAmbientOcclusion.init(this, "textures/scooter/new/KR51AO.png");
 
 		// Descriptor pool sizes
 		// WARNING!!!!!!!!
 		// Must be set before initializing the text and the scene
 // **A10** Update the number of elements to correctly size the descriptor sets pool
 		DPSZs.uniformBlocksInPool = 5 + 2; // ScooterMatrixUniformBufferObject and ScooterShaderParametersUniformBufferObject
-		DPSZs.texturesInPool = 4 + 6; // Textures (TScooterAmbientOcclusion, TScooterBaseColor, TScooterNormal, TScooterHeight, TScooterMetallic, TScooterRoughness)
+        DPSZs.texturesInPool = 4 + 6; // Textures (TScooterBaseColor, TScooterNormal, TScooterHeight, TScooterMetallic, TScooterRoughness, TScooterAmbientOcclusion)
 		DPSZs.setsInPool = 4 + 1; // DSScooter
 
 std::cout << "Initializing text\n";
@@ -305,7 +305,7 @@ std::cout << "Initializing text\n";
 // Textures should be passed in the diffuse, specular, normal map, emission and clouds order.
 
 //        Texture TScooterAmbientOcclusion, TScooterBaseColor, TScooterNormal, TScooterHeight, TScooterMetallic, TScooterRoughness;
-        DSScooter.init(this,&DSLScooter,{&TScooterAmbientOcclusion, &TScooterBaseColor, &TScooterNormal, &TScooterHeight, &TScooterMetallic, &TScooterRoughness});
+        DSScooter.init(this,&DSLScooter,{&TScooterBaseColor, &TScooterNormal, &TScooterHeight, &TScooterMetallic, &TScooterRoughness, &TScooterAmbientOcclusion});
 
 		DSGlobal.init(this, &DSLGlobal, {});
 
@@ -348,13 +348,13 @@ std::cout << "Initializing text\n";
 		Tstars.cleanup();
 		MskyBox.cleanup();
 // **A10** Add the cleanup for models and textures
-//        Texture TScooterAmbientOcclusion, TScooterBaseColor, TScooterNormal, TScooterHeight, TScooterMetallic, TScooterRoughness;
-        TScooterAmbientOcclusion.cleanup();
+//        Texture TScooterBaseColor, TScooterNormal, TScooterHeight, TScooterMetallic, TScooterRoughness, TScooterAmbientOcclusion;
         TScooterBaseColor.cleanup();
         TScooterNormal.cleanup();
         TScooterHeight.cleanup();
         TScooterMetallic.cleanup();
         TScooterRoughness.cleanup();
+        TScooterAmbientOcclusion.cleanup();
         MScooter.cleanup();
 
 		// Cleanup descriptor set layouts
@@ -546,39 +546,39 @@ std::cout << "Initializing text\n";
 		}
 
 
-		if(currScene == 1) {
-			switch(subpass) {
-			  case 0:
-ViewMatrix   = glm::mat4(-0.0656882, -0.162777, 0.984474, 0, 0.0535786, 0.984606, 0.166374, 0, -0.996401, 0.0636756, -0.0559558, 0, 0.0649244, -0.531504, -3.26128, 1);
-cTime    = 22.3604;
-tTime    = 22.3604;
-ShowCloud    = 1;
-ShowTexture    = 1;
-autoTime = false;
-				break;
-			  case 1:
-ViewMatrix   = glm::mat4(-0.312507, -0.442291, 0.840666, 0, 0.107287, 0.862893, 0.493868, 0, -0.943837, 0.24453, -0.222207, 0, -0.0157694, -0.186147, -1.54649, 1);
-cTime    = 38.9919;
-tTime    = 38.9919;
-ShowCloud    = 0;
-ShowTexture    = 1;
-				break;
-			  case 2:
-ViewMatrix   = glm::mat4(-0.992288, 0.00260993, -0.12393, 0, -0.0396232, 0.940648, 0.337063, 0, 0.117454, 0.339374, -0.93329, 0, 0.0335061, -0.0115242, -2.99662, 1);
-cTime    = 71.0587;
-tTime    = 11.0587;
-ShowCloud    = 1;
-ShowTexture    = 1;
-				break;
-			  case 3:
-ViewMatrix   = glm::mat4(0.0942192, -0.242781, 0.965495, 0, 0.560756, 0.814274, 0.150033, 0, -0.822603, 0.527272, 0.212861, 0, -0.567191, -0.254532, -1.79143, 1);
-cTime    = 55.9355;
-tTime    = 7.93549;
-ShowCloud    = 1;
-ShowTexture    = 0;
-				break;
-			}
-		}
+        if(currScene == 1) {
+            switch(subpass) {
+                case 0:
+                    ViewMatrix   = glm::mat4(-0.0656882, -0.162777, 0.984474, 0, 0.0535786, 0.984606, 0.166374, 0, -0.996401, 0.0636756, -0.0559558, 0, 0.0649244, -0.531504, -3.26128, 1);
+                    cTime    = 22.3604;
+                    tTime    = 22.3604;
+                    ShowCloud    = 1;
+                    ShowTexture    = 1;
+                    autoTime = false;
+                    break;
+                case 1:
+                    ViewMatrix   = glm::mat4(-0.312507, -0.442291, 0.840666, 0, 0.107287, 0.862893, 0.493868, 0, -0.943837, 0.24453, -0.222207, 0, -0.0157694, -0.186147, -1.54649, 1);
+                    cTime    = 38.9919;
+                    tTime    = 38.9919;
+                    ShowCloud    = 0;
+                    ShowTexture    = 1;
+                    break;
+                case 2:
+                    ViewMatrix   = glm::mat4(-0.992288, 0.00260993, -0.12393, 0, -0.0396232, 0.940648, 0.337063, 0, 0.117454, 0.339374, -0.93329, 0, 0.0335061, -0.0115242, -2.99662, 1);
+                    cTime    = 71.0587;
+                    tTime    = 11.0587;
+                    ShowCloud    = 1;
+                    ShowTexture    = 1;
+                    break;
+                case 3:
+                    ViewMatrix   = glm::mat4(0.0942192, -0.242781, 0.965495, 0, 0.560756, 0.814274, 0.150033, 0, -0.822603, 0.527272, 0.212861, 0, -0.567191, -0.254532, -1.79143, 1);
+                    cTime    = 55.9355;
+                    tTime    = 7.93549;
+                    ShowCloud    = 1;
+                    ShowTexture    = 0;
+                    break;
+            }
+        }
 
 		if(currScene == 1) {
 			subpassTimer += deltaT;
