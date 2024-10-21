@@ -1,4 +1,4 @@
-To execute first try, duplicate A10 and substitute corresponding files with those in repo.
+To execute, just compile files, main file is `clean.cpp`.
 
 Remember to compile shaders:
 ```bash
