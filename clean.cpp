@@ -15,11 +15,24 @@ struct ScooterMatricesUniformBufferObject {
     alignas(16) glm::mat4 nMat;
 };
 
+struct CityMatricesUniformBufferObject {
+    alignas(16) glm::mat4 mvpMat;  // Model-View-Projection matrix
+    alignas(16) glm::mat4 mMat;    // Model matrix
+    alignas(16) glm::mat4 nMat;    // Normal matrix
+};
+
+
 // **A10** Place here the CPP struct for the uniform buffer for the parameters
 struct ScooterParametersUniformBufferObject {
     alignas(4) float Pow;
     alignas(4) float Ang;
 };
+
+struct CityParametersUniformBufferObject {
+    alignas(4) float Pow;  // Parametro di potenza speculare, simile a quello dello scooter
+    alignas(4) float Ang;  // Parametro per eventuali trasformazioni basate sul tempo (opzionale)
+};
+
 
 // **A10** Place here the CPP struct for the vertex definition
 struct ScooterVertex {
@@ -27,6 +40,13 @@ struct ScooterVertex {
     glm::vec3 norm;
     glm::vec2 UV;
     glm::vec4 tan;
+};
+
+struct CityVertex {
+    glm::vec3 pos;   // Posizione del vertex
+    glm::vec3 norm;  // Normale del vertex
+    glm::vec2 UV;    // Coordinate UV per la texture
+    glm::vec4 tan;   // Tangente per il normal mapping (opzionale, se il modello lo richiede)
 };
 
 
@@ -40,12 +60,16 @@ protected:
 
 // **A10** Place here the variable for the DescriptorSetLayout
     DescriptorSetLayout DSLScooter;
+    DescriptorSetLayout DSLCity;
+
 
 // **A10** Place here the variable for the VertexDescriptor
     VertexDescriptor VDScooter;
+    VertexDescriptor VDCity;
 
 // **A10** Place here the variable for the Pipeline
     Pipeline PScooter;
+    Pipeline PCity;
 
 /*
 	// Scenes and texts
@@ -57,8 +81,11 @@ protected:
 
 // **A10** Place here the variables for the Model, the five texture (diffuse, specular, normal map, emission and clouds) and the Descrptor Set
     Model MScooter;
+    Model MCity;
     Texture TScooterBaseColor, TScooterNormal, TScooterHeight, TScooterMetallic, TScooterRoughness, TScooterAmbientOcclusion;
+    Texture TCity;
     DescriptorSet DSScooter;
+    DescriptorSet DSCity;
 
     // Other application parameters
     int currScene = 0;
@@ -107,6 +134,11 @@ protected:
                 {6, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 5, 1},  // Texture Ambient Occlusion
                 {7, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(ScooterParametersUniformBufferObject), 1},
         });
+        DSLCity.init(this, {
+                {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(CityMatricesUniformBufferObject), 1},  // Matrice uniforme del modello scooter
+                {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1},  // Texture Base Color
+                {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(CityParametersUniformBufferObject), 1},
+        });
 
 // **A10** Place here the initialization for the VertexDescriptor
         VDScooter.init(this, {
@@ -119,14 +151,26 @@ protected:
                                {0, 3, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(ScooterVertex, tan), sizeof(glm::vec4), TANGENT}  // Tangente (4 componenti float)
                        });
 
+        VDCity.init(this, {
+                {0, sizeof(CityVertex), VK_VERTEX_INPUT_RATE_VERTEX}  // Descrive la dimensione del vertice e la frequenza di input
+        }, {
+                            // Descrizione degli attributi dei vertici
+                            {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(CityVertex, pos), sizeof(glm::vec3), POSITION},  // Posizione (3 componenti float)
+                            {0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(CityVertex, norm), sizeof(glm::vec3), NORMAL},    // Normale (3 componenti float)
+                            {0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(CityVertex, UV), sizeof(glm::vec2), UV},             // UV (2 componenti float)
+                            {0, 3, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(CityVertex, tan), sizeof(glm::vec4), TANGENT}  // Tangente (4 componenti float)
+                    });
+
 // **A10** Place here the initialization of the pipeline. Remember that it should use shaders in files
 //		"shaders/NormalMapVert.spv" and "shaders/NormalMapFrag.spv", it should receive the new VertexDescriptor you defined
 //		And should receive two DescriptorSetLayout, the first should be DSLGlobal, while the other must be the one you defined
         PScooter.init(this, &VDScooter, "shaders/NormalMapVert.spv", "shaders/NormalMapFrag.spv", {&DSLGlobal, &DSLScooter});
+        PCity.init(this, &VDCity, "shaders/NormalMapVert.spv", "shaders/CityFrag.spv", {&DSLGlobal, &DSLCity});
 
 // **A10** Place here the loading of the model. It should be contained in file "models/Sphere.gltf", it should use the
 //		Vertex descriptor you defined, and be of GLTF format.
         MScooter.init(this, &VDScooter, "models/Scooter.obj", OBJ);
+        MCity.init(this, &VDCity, "models/road.obj", OBJ);
 
 // **A10** Place here the loading of the four textures
 
@@ -146,14 +190,16 @@ protected:
 
         TScooterAmbientOcclusion.init(this, "textures/scooter/new/KR51AO.png");
 
+        TCity.init(this, "textures/city/road.png");
+
 
         // Descriptor pool sizes
         // WARNING!!!!!!!!
         // Must be set before initializing the text and the scene
 // **A10** Update the number of elements to correctly size the descriptor sets pool
-        DPSZs.uniformBlocksInPool = 1 + 2; // ScooterMatrixUniformBufferObject and ScooterShaderParametersUniformBufferObject
-        DPSZs.texturesInPool = 6; // Textures (TScooterBaseColor, TScooterNormal, TScooterHeight, TScooterMetallic, TScooterRoughness, TScooterAmbientOcclusion)
-        DPSZs.setsInPool = 1 + 1; // DSScooter
+        DPSZs.uniformBlocksInPool = 1 + 2 + 2; // ScooterMatrixUniformBufferObject and ScooterShaderParametersUniformBufferObject, same for City
+        DPSZs.texturesInPool = 6 + 1; // Textures (TScooterBaseColor, TScooterNormal, TScooterHeight, TScooterMetallic, TScooterRoughness, TScooterAmbientOcclusion) + 1 for city
+        DPSZs.setsInPool = 1 + 1 + 1; // DSScooter and DSCity
 
         std::cout << "Initialization completed!\n";
         std::cout << "Uniform Blocks in the Pool  : " << DPSZs.uniformBlocksInPool << "\n";
@@ -167,11 +213,13 @@ protected:
     void pipelinesAndDescriptorSetsInit() {
 // **A10** Add the pipeline creation
         PScooter.create();
+        PCity.create();
 
 // **A10** Add the descriptor set creation
 
 //        Texture TScooterAmbientOcclusion, TScooterBaseColor, TScooterNormal, TScooterHeight, TScooterMetallic, TScooterRoughness;
         DSScooter.init(this,&DSLScooter,{&TScooterBaseColor, &TScooterNormal, &TScooterHeight, &TScooterMetallic, &TScooterRoughness, &TScooterAmbientOcclusion});
+        DSCity.init(this,&DSLCity,{&TCity});
 
 
         DSGlobal.init(this, &DSLGlobal, {});
@@ -182,11 +230,13 @@ protected:
     void pipelinesAndDescriptorSetsCleanup() {
 // **A10** Add the pipeline cleanup
         PScooter.cleanup();
+        PCity.cleanup();
 
         DSGlobal.cleanup();
 
 // **A10** Add the descriptor set cleanup
         DSScooter.cleanup();
+        DSCity.cleanup();
     }
 
     // Here you destroy all the Models, Texture and Desc. Set Layouts you created!
@@ -203,13 +253,19 @@ protected:
         TScooterRoughness.cleanup();
         TScooterAmbientOcclusion.cleanup();
         MScooter.cleanup();
+
+        TCity.cleanup();
+        MCity.cleanup();
+
         DSLGlobal.cleanup();
 
 // **A10** Add the cleanup for the descriptor set layout
         DSLScooter.cleanup();
+        DSLCity.cleanup();
 
 // **A10** Add the cleanup for the pipeline
         PScooter.destroy();
+        PCity.destroy();
 
     }
 
@@ -228,6 +284,17 @@ protected:
                          static_cast<uint32_t>(MScooter.indices.size()), 1, 0, 0, 0);
 
 
+// 2. Binding del pipeline e del modello per la città
+        PCity.bind(commandBuffer);                // Pipeline per la città
+        MCity.bind(commandBuffer);                // Modello della città
+
+// Binding dei descriptor set globali e quelli specifici della città
+        DSGlobal.bind(commandBuffer, PCity, 0, currentImage);    // Descriptor Set globale per la città
+        DSCity.bind(commandBuffer, PCity, 1, currentImage);      // Descriptor Set per la città
+
+// Comando di disegno per la città
+        vkCmdDrawIndexed(commandBuffer,
+                         static_cast<uint32_t>(MCity.indices.size()), 1, 0, 0, 0);
     }
 
     // Here is where you update the uniforms.
@@ -277,26 +344,42 @@ protected:
         ScooterMatricesUniformBufferObject ScooterUbo{};
         ScooterParametersUniformBufferObject ScooterParUbo{};
 
+        CityMatricesUniformBufferObject CityUbo{};
+        CityParametersUniformBufferObject CityParUbo{};
+
         // World and normal matrix should be the identiy. The World-View-Projection should be variable ViewPrj
         ScooterUbo.mMat = glm::mat4(1.0f);
         ScooterUbo.nMat = glm::mat4(1.0f);
         ScooterUbo.mvpMat = ViewPrj;
 
+        CityUbo.mMat = glm::mat4(1.0f);
+        CityUbo.nMat = glm::mat4(1.0f);
+        CityUbo.mvpMat = ViewPrj;
+
         // These informations should be used to fill the Uniform Buffer Object in Binding 0 of your DSL
         DSScooter.map(currentImage, &ScooterUbo, 0);
+
+        DSCity.map(currentImage, &CityUbo, 0);
 
         // The specular power of the uniform buffer containing the material parameters of the new object should be set to:
         // XXX.Power = 200.0
         // Where you replace XXX.Power with the field of the local variable corresponding to the uniform buffer object
         ScooterParUbo.Pow = 200.0f;
 
+        CityParUbo.Pow = 200.0f;
+
         // The textre angle parameter of the uniform buffer containing the material parameters of the new object shoud be set to: tTime * TangTurnTimeFact
         // XXX.Ang = tTime * TangTurnTimeFact;
         // Where you replace XXX.Ang with the local field of the variable corresponding to the uniform buffer object
         ScooterParUbo.Ang = 0.0f;
 
+        CityParUbo.Ang = 0.0f;
+
         // These informations should be used to fill the Uniform Buffer Object in Binding 6 of your DSL
         DSScooter.map(currentImage, &ScooterParUbo, 7);
+
+        DSCity.map(currentImage, &CityParUbo, 2);
+
     }
 };
 
