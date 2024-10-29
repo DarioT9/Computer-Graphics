@@ -1,6 +1,7 @@
 // This has been adapted from the Vulkan tutorial
 
 #include "modules/Starter.hpp"
+#include "WVP.hpp"
 
 struct GlobalUniformBufferObject {
     alignas(16) glm::vec3 lightDir;
@@ -319,6 +320,16 @@ protected:
 		static int subpass = 0;
 		static float subpassTimer = 0.0;
 
+        static float CamPitch = glm::radians(20.0f);
+		static float CamYaw   = M_PI;
+		static float CamDist  = 10.0f;
+		static float CamRoll  = 0.0f;
+		const glm::vec3 CamTargetDelta = glm::vec3(0,2,0);
+		const glm::vec3 Cam1stPos = glm::vec3(0.49061f, 2.07f, 2.7445f);
+        
+		glm::vec3 CamPos = Pos;
+		static glm::vec3 dampedCamPos = CamPos;
+
 
         m.y = 0;
 		m = glm::vec3(glm::rotate(glm::mat4(1), DlookAng, glm::vec3(0,1,0)) * glm::vec4(m, 1));
@@ -330,21 +341,32 @@ protected:
 
         glm::mat4 Wm = glm::translate(glm::mat4(1), Pos) * glm::rotate(glm::mat4(1), ang, glm::vec3(0,1,0));
 
+        glm::mat4 M;
 
         // The Fly model update proc.
-        ViewMatrix = glm::rotate(glm::mat4(1), ROT_SPEED * r.x * deltaT,
-                                 glm::vec3(1, 0, 0)) * ViewMatrix;
-        ViewMatrix = glm::rotate(glm::mat4(1), ROT_SPEED * r.y * deltaT,
-                                 glm::vec3(0, 1, 0)) * ViewMatrix;
-        ViewMatrix = glm::rotate(glm::mat4(1), -ROT_SPEED * r.z * deltaT,
-                                 glm::vec3(0, 0, 1)) * ViewMatrix;
-        ViewMatrix = glm::translate(glm::mat4(1), -glm::vec3(
-                MOVE_SPEED * m.x * deltaT, MOVE_SPEED * m.y * deltaT, MOVE_SPEED * m.z * deltaT))
-                     * ViewMatrix;
+        if((currScene == 0) || ((currScene == 2) && (subpass < 4))) {
+			CamYaw += ROT_SPEED * deltaT * r.y;
+			CamPitch -= ROT_SPEED * deltaT * r.x;
+			CamRoll -= ROT_SPEED * deltaT * r.z;
+			CamDist -= MOVE_SPEED * deltaT * m.y;
+		
+			CamYaw = (CamYaw < 0.0f ? 0.0f : (CamYaw > 2*M_PI ? 2*M_PI : CamYaw));
+			CamPitch = (CamPitch < 0.0f ? 0.0f : (CamPitch > M_PI_2-0.01f ? M_PI_2-0.01f : CamPitch));
+			CamRoll = (CamRoll < -M_PI ? -M_PI : (CamRoll > M_PI ? M_PI : CamRoll));
+			CamDist = (CamDist < 7.0f ? 7.0f : (CamDist > 15.0f ? 15.0f : CamDist));
+				
+			glm::vec3 CamTarget = Pos + glm::vec3(glm::rotate(glm::mat4(1), CamYaw, glm::vec3(0,1,0)) *
+							 glm::vec4(CamTargetDelta,1));
+			CamPos = CamTarget + glm::vec3(glm::rotate(glm::mat4(1), CamYaw, glm::vec3(0,1,0)) * glm::rotate(glm::mat4(1), -CamPitch, glm::vec3(1,0,0)) * 
+							 glm::vec4(0,0,CamDist,1));
 
+			const float lambdaCam = 10.0f;
+			dampedCamPos = CamPos * (1 - exp(-lambdaCam * deltaT)) +
+						 dampedCamPos * exp(-lambdaCam * deltaT); 
+			M = MakeViewProjectionLookAt(dampedCamPos, CamTarget, glm::vec3(0,1,0), CamRoll, glm::radians(90.0f), Ar, 0.1f, 500.0f);
+		}
         // Here is where you actually update your uniforms
-        glm::mat4 M = glm::perspective(glm::radians(45.0f), Ar, 0.1f, 160.0f);
-        M[1][1] *= -1;
+        
 
         glm::mat4 Mv = ViewMatrix;
 
