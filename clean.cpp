@@ -95,6 +95,8 @@ protected:
     glm::mat4 ViewMatrix;
 
     float Ar;
+	glm::vec3 Pos;
+	glm::vec3 InitialPos;
 
     // Here you set the main application parameters
     void setWindowParameters() {
@@ -300,6 +302,8 @@ protected:
     // Here is where you update the uniforms.
     // Very likely this will be where you will be writing the logic of your application.
     void updateUniformBuffer(uint32_t currentImage) {
+        static bool debounce = false;
+		static int curDebounce = 0;
 
         float deltaT;
         glm::vec3 m = glm::vec3(0.0f), r = glm::vec3(0.0f);
@@ -307,8 +311,24 @@ protected:
         getSixAxis(deltaT, m, r, fire);
 
 
-        const float ROT_SPEED = glm::radians(120.0f);
-        const float MOVE_SPEED = 2.0f;
+        const float ROT_SPEED = glm::radians(360.0f);
+		const float MOVE_SPEED = 10.0f;
+		static float ang;
+		static float lookAng = 0;
+		static float DlookAng = 0;
+		static int subpass = 0;
+		static float subpassTimer = 0.0;
+
+
+        m.y = 0;
+		m = glm::vec3(glm::rotate(glm::mat4(1), DlookAng, glm::vec3(0,1,0)) * glm::vec4(m, 1));
+		Pos += m * MOVE_SPEED * deltaT;
+
+        if((m.x != 0) || (m.z != 0)) {
+			ang	= atan2(-m.z, m.x) + 3.1416/2.0;
+		}
+
+        glm::mat4 Wm = glm::translate(glm::mat4(1), Pos) * glm::rotate(glm::mat4(1), ang, glm::vec3(0,1,0));
 
 
         // The Fly model update proc.
@@ -336,7 +356,7 @@ protected:
 
         gubo.lightDir = glm::vec3(0.0f, 1.0f, 0.0f);
         gubo.lightColor = glm::vec4(1.0f);
-        gubo.eyePos = glm::vec3(glm::inverse(ViewMatrix) * glm::vec4(0, 0, 0, 1));
+        gubo.eyePos = glm::vec3(glm::inverse(ViewMatrix) * glm::vec4(0, 3, 0, 1));
         DSGlobal.map(currentImage, &gubo, 0);
 
 
@@ -348,9 +368,9 @@ protected:
         CityParametersUniformBufferObject CityParUbo{};
 
         // World and normal matrix should be the identiy. The World-View-Projection should be variable ViewPrj
-        ScooterUbo.mMat = glm::mat4(1.0f);
-        ScooterUbo.nMat = glm::mat4(1.0f);
-        ScooterUbo.mvpMat = ViewPrj;
+        ScooterUbo.mMat = Wm * glm::mat4(1.0f);
+		ScooterUbo.mvpMat = ViewPrj * ScooterUbo.mMat;
+		ScooterUbo.nMat = glm::inverse(glm::transpose(ScooterUbo.mMat));
 
         CityUbo.mMat = glm::mat4(1.0f);
         CityUbo.nMat = glm::mat4(1.0f);
