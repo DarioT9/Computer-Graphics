@@ -4,6 +4,21 @@
 #include "modules/Starter.hpp"
 #include "WVP.hpp"
 
+#define PI 3.14159265359
+
+struct BoundingBox {
+    glm::vec2 min;
+    glm::vec2 max;
+};
+
+/*
+std::vector<BoundingBox> barriers = {
+//        {{-2.0f, -2.0f}, {2.0f, 2.0f}},  // Rettangolo tra (-2, -2) e (2, 2)
+        {{2.0f, 2.0f}, {22.0f, 22.0f}},    // Un altro rettangolo
+        // Aggiungi qui altri muri invisibili
+};
+*/
+
 struct GlobalUniformBufferObject {
     alignas(16) glm::vec3 lightDir;
     alignas(16) glm::vec4 lightColor;
@@ -174,10 +189,15 @@ protected:
     glm::mat4 ViewMatrix;
 
     float Ar;
-	glm::vec3 Pos;
+	glm::vec3 ScooterPos;
 	glm::vec3 InitialPos;
     float Yaw = 0;
     float Roll = 0;
+
+    // Generates centers for the buildings, going from -84 to 84 with a step of 24
+    std::vector<glm::vec2> centers = generateCenters(84, 24);
+
+    std::vector<BoundingBox> barriers = getBarriers(centers, 20);
 
     // Here you set the main application parameters
     void setWindowParameters() {
@@ -311,6 +331,8 @@ protected:
         std::cout << "Descriptor Sets in the Pool : " << DPSZs.setsInPool << "\n";
 
         ViewMatrix = glm::translate(glm::mat4(1), -CamPos);
+
+        ScooterPos = glm::vec3(0.0f, 0.0f, 0.0f);  // Imposta la posizione iniziale dello scooter
     }
 
     // Here you create your pipelines and Descriptor Sets!
@@ -428,6 +450,8 @@ protected:
         float deltaT;
         glm::vec3 m = glm::vec3(0.0f), r = glm::vec3(0.0f);
         bool fire = false;
+//        bool print = false;
+
         getSixAxis(deltaT, m, r, fire);
 
 
@@ -446,23 +470,13 @@ protected:
 		const glm::vec3 CamTargetDelta = glm::vec3(0,2,0);
 		const glm::vec3 Cam1stPos = glm::vec3(0.49061f, 2.07f, 2.7445f);
         
-		glm::vec3 CamPos = Pos;
+		glm::vec3 CamPos = ScooterPos;
 		static glm::vec3 dampedCamPos = CamPos;
         static float SteeringAng = 0.0f;
 		static float wheelRoll = 0.0f;
 		static float dampedVel = 0.0f;
 
-        /*
-        m.y = 0;
-		m = glm::vec3(glm::rotate(glm::mat4(1), DlookAng, glm::vec3(0,1,0)) * glm::vec4(m, 1));
-		Pos += m * MOVE_SPEED * deltaT;
 
-        if((m.x != 0) || (m.z != 0)) {
-			ang	= atan2(-m.z, m.x) + 3.1416/2.0;
-		}
-
-        glm::mat4 Wm = glm::translate(glm::mat4(1), Pos) * glm::rotate(glm::mat4(1), ang, glm::vec3(0,1,0));
-        */
         glm::mat4 M;
 
 
@@ -485,20 +499,20 @@ protected:
 
         if(dampedVel != 0.0f) {
 
-            glm::vec3 oldPos = Pos;
+            glm::vec3 oldPos = ScooterPos;
             if(SteeringAng != 0.0f) {
 				const float l = 2.78f;
 				float r = l / tan(SteeringAng);
-				float cx = Pos.x + r * cos(Yaw);
-				float cz = Pos.z - r * sin(Yaw);
+				float cx = ScooterPos.x + r * cos(Yaw);
+				float cz = ScooterPos.z - r * sin(Yaw);
 				float Dbeta = dampedVel / r;
 				Yaw = Yaw - Dbeta;
                 Roll = Roll - Dbeta;
-				Pos.x = cx - r * cos(Yaw);
-				Pos.z = cz + r * sin(Yaw);
+				ScooterPos.x = cx - r * cos(Yaw);
+				ScooterPos.z = cz + r * sin(Yaw);
 			} else {
-				Pos.x = Pos.x - sin(Yaw) * dampedVel;
-				Pos.z = Pos.z - cos(Yaw) * dampedVel;
+				ScooterPos.x = ScooterPos.x - sin(Yaw) * dampedVel;
+				ScooterPos.z = ScooterPos.z - cos(Yaw) * dampedVel;
 			}
 			if(m.x == 0) {
 				if(SteeringAng > STEERING_SPEED * deltaT) {
@@ -512,10 +526,23 @@ protected:
 
         }
 
-        glm::mat4 Wm = glm::translate(glm::mat4(1), Pos) * glm::rotate(glm::mat4(1), ang + Yaw, glm::vec3(0,1,0))
+        glm::vec3 proposedPos = ScooterPos;
+
+/*
+        if (proposedPos != ScooterPos) {
+            print = true;
+        }
+*/
+        //Verifica collisione con x e z;
+        if (!checkCollision(proposedPos, ang, 0.7f)) {
+            // Solo se non c'è collisione, aggiorna la posizione
+            ScooterPos = proposedPos;
+        }
+
+        glm::mat4 Wm = glm::translate(glm::mat4(1), ScooterPos) * glm::rotate(glm::mat4(1), ang + Yaw, glm::vec3(0,1,0))
                                                          * glm::rotate(glm::mat4(1), ang - SteeringAng, glm::vec3(0,0,1));
 
-        glm::mat4 FWm = glm::translate(glm::mat4(1), Pos) * glm::rotate(glm::mat4(1), ang + Yaw*3.0f, glm::vec3(0,1,0));
+        glm::mat4 FWm = glm::translate(glm::mat4(1), ScooterPos) * glm::rotate(glm::mat4(1), ang + Yaw*3.0f, glm::vec3(0,1,0));
 
         // The Fly model update proc.
         if((currScene == 0)) {
@@ -529,7 +556,7 @@ protected:
 			CamRoll = (CamRoll < -M_PI ? -M_PI : (CamRoll > M_PI ? M_PI : CamRoll));
 			CamDist = 5.0f;
 				
-			glm::vec3 CamTarget = Pos + glm::vec3(0,2,-5);
+			glm::vec3 CamTarget = ScooterPos + glm::vec3(0,2,-5);
 			CamPos = CamTarget + glm::vec3(glm::rotate(glm::mat4(1), Yaw + CamYaw, glm::vec3(0,1,0)) * glm::rotate(glm::mat4(1), -CamPitch, glm::vec3(1,0,0)) * 
 							 glm::vec4(0, 0, CamDist,1));
 
@@ -611,6 +638,68 @@ protected:
         DSCity.map(currentImage, &CityParUbo, 2);
 
     }
+
+    bool checkCollision(glm::vec3 centerPos, float angle, float halfLength) {
+        // Direzione della moto basata sul suo orientamento
+/*        glm::vec2 direction(cos(angle), sin(angle));
+        glm::vec2 perpendicularDirection(-direction.y, direction.x);*/
+        glm::vec2 direction(-sin(angle), cos(angle));
+
+
+        // Calcola i punti davanti e dietro al baricentro
+        glm::vec2 frontPoint = glm::vec2(centerPos.x, centerPos.z) + halfLength * direction;
+        glm::vec2 backPoint = glm::vec2(centerPos.x, centerPos.z) - halfLength * direction;
+
+/*
+        if (print) {
+            std::cout << "Front point: \t" << frontPoint.x << ", \t" << frontPoint.y << std::endl;
+            std::cout << "Center: \t" << centerPos.x << ", \t" << centerPos.z << std::endl;
+            std::cout << "Back point: \t" << backPoint.x << ", \t" << backPoint.y << std::endl;
+            std::cout << "Angle: \t" << angle << ", \t" <<angle*180/PI << std::endl;
+            std::cout << "---------------------------------------" << std::endl;
+        }
+*/
+
+        // Controlla la collisione sia per il punto frontale che per il punto posteriore
+        for (const auto& barrier : barriers) {
+            if ((frontPoint.x >= barrier.min.x && frontPoint.x <= barrier.max.x &&
+                frontPoint.y >= barrier.min.y && frontPoint.y <= barrier.max.y) || // check if front point is in barrier
+                (backPoint.x >= barrier.min.x && backPoint.x <= barrier.max.x &&
+                backPoint.y >= barrier.min.y && backPoint.y <= barrier.max.y))     // check if back point is in barrier
+            {
+//                std::cout << "-------- COLLISIONE ------------" << std::endl;
+                return true;  // Collisione rilevata
+            }
+        }
+        return false;
+    }
+
+    std::vector<glm::vec2> generateCenters(int coord, int step) {
+        std::vector<glm::vec2> centers;
+
+        for (int i = -coord; i <= coord; i+=step) {
+            for (int j = -coord; j <= coord; j+=step) {
+                centers.push_back(glm::vec2(static_cast<float>(i), static_cast<float>(j)));
+            }
+        }
+
+        return centers;
+    }
+
+    std::vector<BoundingBox> getBarriers(const std::vector<glm::vec2>& centers, float sideLength) {
+        std::vector<BoundingBox> barriers;
+        float halfSide = sideLength / 2.0f;
+
+        for (const auto& center : centers) {
+            glm::vec2 min = {center.x - halfSide, center.y - halfSide};
+            glm::vec2 max = {center.x + halfSide, center.y + halfSide};
+            barriers.push_back({min, max});
+        }
+
+        return barriers;
+    }
+
+
 };
 
 // This is the main: probably you do not need to touch this!
@@ -626,3 +715,4 @@ int main() {
 
     return EXIT_SUCCESS;
 }
+
