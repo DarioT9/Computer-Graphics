@@ -198,6 +198,9 @@ protected:
     std::vector<glm::vec2> centers = generateCenters(84, 24);
 
     std::vector<BoundingBox> barriers = getBarriers(centers, 20);
+    BoundingBox externalBarriers = {{-98.0f, -98.0f}, {98.0f, 98.0f}};
+
+
 
     // Here you set the main application parameters
     void setWindowParameters() {
@@ -659,6 +662,20 @@ protected:
             std::cout << "---------------------------------------" << std::endl;
         }
 */
+        // Check if the scooter is outside the external barriers
+        if (
+                frontPoint.x <= externalBarriers.min.x ||
+                frontPoint.x >= externalBarriers.max.x ||
+                frontPoint.y <= externalBarriers.min.y ||
+                frontPoint.y >= externalBarriers.max.y ||
+                backPoint.x <= externalBarriers.min.x ||
+                backPoint.x >= externalBarriers.max.x ||
+                backPoint.y <= externalBarriers.min.y ||
+                backPoint.y >= externalBarriers.max.y
+            )
+        {
+            return true;
+        }
 
         // Controlla la collisione sia per il punto frontale che per il punto posteriore
         for (const auto& barrier : barriers) {
