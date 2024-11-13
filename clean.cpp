@@ -98,6 +98,8 @@ protected:
     float Ar;
 	glm::vec3 Pos;
 	glm::vec3 InitialPos;
+    float Yaw = 0;
+    float Roll = 0;
 
     // Here you set the main application parameters
     void setWindowParameters() {
@@ -312,8 +314,8 @@ protected:
         getSixAxis(deltaT, m, r, fire);
 
 
-        const float ROT_SPEED = glm::radians(360.0f);
-		const float MOVE_SPEED = 10.0f;
+        //const float ROT_SPEED = glm::radians(360.0f);
+		//const float MOVE_SPEED = 10.0f;
 		static float ang;
 		static float lookAng = 0;
 		static float DlookAng = 0;
@@ -329,8 +331,11 @@ protected:
         
 		glm::vec3 CamPos = Pos;
 		static glm::vec3 dampedCamPos = CamPos;
+        static float SteeringAng = 0.0f;
+		static float wheelRoll = 0.0f;
+		static float dampedVel = 0.0f;
 
-
+        /*
         m.y = 0;
 		m = glm::vec3(glm::rotate(glm::mat4(1), DlookAng, glm::vec3(0,1,0)) * glm::vec4(m, 1));
 		Pos += m * MOVE_SPEED * deltaT;
@@ -340,11 +345,61 @@ protected:
 		}
 
         glm::mat4 Wm = glm::translate(glm::mat4(1), Pos) * glm::rotate(glm::mat4(1), ang, glm::vec3(0,1,0));
-
+        */
         glm::mat4 M;
 
+
+        //tentativo
+        const float STEERING_SPEED = glm::radians(30.0f);
+		const float ROT_SPEED = glm::radians(120.0f);
+		const float MOVE_SPEED = 7.0f;
+
+		SteeringAng += -m.x * STEERING_SPEED * deltaT;
+		SteeringAng = (SteeringAng < glm::radians(-35.0f) ? glm::radians(-35.0f) :
+					  (SteeringAng > glm::radians(35.0f)  ? glm::radians(35.0f)  : SteeringAng));
+
+        double lambdaVel = 8.0f;
+		double dampedVelEpsilon = 0.001f;
+		dampedVel =  MOVE_SPEED * deltaT * m.z * (1 - exp(-lambdaVel * deltaT)) +
+					 dampedVel * exp(-lambdaVel * deltaT);
+		dampedVel = ((fabs(dampedVel) < dampedVelEpsilon) ? 0.0f : dampedVel);
+		wheelRoll -= dampedVel / 0.4;
+		wheelRoll = (wheelRoll < 0.0 ? wheelRoll + 2*M_PI : (wheelRoll > 2*M_PI ? wheelRoll - 2*M_PI : wheelRoll));
+
+        if(dampedVel != 0.0f) {
+
+            glm::vec3 oldPos = Pos;
+            if(SteeringAng != 0.0f) {
+				const float l = 2.78f;
+				float r = l / tan(SteeringAng);
+				float cx = Pos.x + r * cos(Yaw);
+				float cz = Pos.z - r * sin(Yaw);
+				float Dbeta = dampedVel / r;
+				Yaw = Yaw - Dbeta;
+                Roll = Roll - Dbeta;
+				Pos.x = cx - r * cos(Yaw);
+				Pos.z = cz + r * sin(Yaw);
+			} else {
+				Pos.x = Pos.x - sin(Yaw) * dampedVel;
+				Pos.z = Pos.z - cos(Yaw) * dampedVel;
+			}
+			if(m.x == 0) {
+				if(SteeringAng > STEERING_SPEED * deltaT) {
+					SteeringAng -= STEERING_SPEED * deltaT;
+				} else if(SteeringAng < -STEERING_SPEED * deltaT) {
+					SteeringAng += STEERING_SPEED * deltaT;
+				} else {
+					SteeringAng = 0.0f;
+				}					
+			}
+
+        }
+
+        glm::mat4 Wm = glm::translate(glm::mat4(1), Pos) * glm::rotate(glm::mat4(1), ang + Yaw, glm::vec3(0,1,0))
+                                                         * glm::rotate(glm::mat4(1), ang - SteeringAng, glm::vec3(0,0,1));
+
         // The Fly model update proc.
-        if((currScene == 0) || ((currScene == 2) && (subpass < 4))) {
+        if((currScene == 0)) {
 			CamYaw += ROT_SPEED * deltaT * r.y;
 			CamPitch -= ROT_SPEED * deltaT * r.x;
 			CamRoll -= ROT_SPEED * deltaT * r.z;
@@ -353,12 +408,11 @@ protected:
 			CamYaw = (CamYaw < 0.0f ? 0.0f : (CamYaw > 2*M_PI ? 2*M_PI : CamYaw));
 			CamPitch = (CamPitch < 0.0f ? 0.0f : (CamPitch > M_PI_2-0.01f ? M_PI_2-0.01f : CamPitch));
 			CamRoll = (CamRoll < -M_PI ? -M_PI : (CamRoll > M_PI ? M_PI : CamRoll));
-			CamDist = (CamDist < 7.0f ? 7.0f : (CamDist > 15.0f ? 15.0f : CamDist));
+			CamDist = 5.0f;
 				
-			glm::vec3 CamTarget = Pos + glm::vec3(glm::rotate(glm::mat4(1), CamYaw, glm::vec3(0,1,0)) *
-							 glm::vec4(CamTargetDelta,1));
-			CamPos = CamTarget + glm::vec3(glm::rotate(glm::mat4(1), CamYaw, glm::vec3(0,1,0)) * glm::rotate(glm::mat4(1), -CamPitch, glm::vec3(1,0,0)) * 
-							 glm::vec4(0,0,CamDist,1));
+			glm::vec3 CamTarget = Pos + glm::vec3(0,2,-5);
+			CamPos = CamTarget + glm::vec3(glm::rotate(glm::mat4(1), Yaw + CamYaw, glm::vec3(0,1,0)) * glm::rotate(glm::mat4(1), -CamPitch, glm::vec3(1,0,0)) * 
+							 glm::vec4(0, 0, CamDist,1));
 
 			const float lambdaCam = 10.0f;
 			dampedCamPos = CamPos * (1 - exp(-lambdaCam * deltaT)) +
@@ -366,7 +420,6 @@ protected:
 			M = MakeViewProjectionLookAt(dampedCamPos, CamTarget, glm::vec3(0,1,0), CamRoll, glm::radians(90.0f), Ar, 0.1f, 500.0f);
 		}
         // Here is where you actually update your uniforms
-        
 
         glm::mat4 Mv = ViewMatrix;
 
@@ -390,6 +443,7 @@ protected:
         CityParametersUniformBufferObject CityParUbo{};
 
         // World and normal matrix should be the identiy. The World-View-Projection should be variable ViewPrj
+        
         ScooterUbo.mMat = Wm * glm::mat4(1.0f);
 		ScooterUbo.mvpMat = ViewPrj * ScooterUbo.mMat;
 		ScooterUbo.nMat = glm::inverse(glm::transpose(ScooterUbo.mMat));
