@@ -19,6 +19,21 @@ std::vector<BoundingBox> barriers = {
 };
 */
 
+#define PI 3.14159265359
+
+struct BoundingBox {
+    glm::vec2 min;
+    glm::vec2 max;
+};
+
+/*
+std::vector<BoundingBox> barriers = {
+//        {{-2.0f, -2.0f}, {2.0f, 2.0f}},  // Rettangolo tra (-2, -2) e (2, 2)
+        {{2.0f, 2.0f}, {22.0f, 22.0f}},    // Un altro rettangolo
+        // Aggiungi qui altri muri invisibili
+};
+*/
+
 struct GlobalUniformBufferObject {
     alignas(16) glm::vec3 lightDir;
     alignas(16) glm::vec4 lightColor;
@@ -190,6 +205,7 @@ protected:
 
     float Ar;
 	glm::vec3 ScooterPos;
+	glm::vec3 ScooterPos;
 	glm::vec3 InitialPos;
     float Yaw = 0;
     float Roll = 0;
@@ -336,6 +352,8 @@ protected:
         ViewMatrix = glm::translate(glm::mat4(1), -CamPos);
 
         ScooterPos = glm::vec3(0.0f, 0.0f, 0.0f);  // Imposta la posizione iniziale dello scooter
+
+        ScooterPos = glm::vec3(0.0f, 0.0f, 0.0f);  // Imposta la posizione iniziale dello scooter
     }
 
     // Here you create your pipelines and Descriptor Sets!
@@ -455,6 +473,8 @@ protected:
         bool fire = false;
 //        bool print = false;
 
+//        bool print = false;
+
         getSixAxis(deltaT, m, r, fire);
 
 
@@ -473,6 +493,7 @@ protected:
 		const glm::vec3 CamTargetDelta = glm::vec3(0,2,0);
 		const glm::vec3 Cam1stPos = glm::vec3(0.49061f, 2.07f, 2.7445f);
         
+		glm::vec3 CamPos = ScooterPos;
 		glm::vec3 CamPos = ScooterPos;
 		static glm::vec3 dampedCamPos = CamPos;
         static float SteeringAng = 0.0f;
@@ -717,6 +738,82 @@ protected:
     }
 
 
+
+    bool checkCollision(glm::vec3 centerPos, float angle, float halfLength) {
+        // Direzione della moto basata sul suo orientamento
+/*        glm::vec2 direction(cos(angle), sin(angle));
+        glm::vec2 perpendicularDirection(-direction.y, direction.x);*/
+        glm::vec2 direction(-sin(angle), cos(angle));
+
+
+        // Calcola i punti davanti e dietro al baricentro
+        glm::vec2 frontPoint = glm::vec2(centerPos.x, centerPos.z) + halfLength * direction;
+        glm::vec2 backPoint = glm::vec2(centerPos.x, centerPos.z) - halfLength * direction;
+
+/*
+        if (print) {
+            std::cout << "Front point: \t" << frontPoint.x << ", \t" << frontPoint.y << std::endl;
+            std::cout << "Center: \t" << centerPos.x << ", \t" << centerPos.z << std::endl;
+            std::cout << "Back point: \t" << backPoint.x << ", \t" << backPoint.y << std::endl;
+            std::cout << "Angle: \t" << angle << ", \t" <<angle*180/PI << std::endl;
+            std::cout << "---------------------------------------" << std::endl;
+        }
+*/
+        // Check if the scooter is outside the external barriers
+        if (
+                frontPoint.x <= externalBarriers.min.x ||
+                frontPoint.x >= externalBarriers.max.x ||
+                frontPoint.y <= externalBarriers.min.y ||
+                frontPoint.y >= externalBarriers.max.y ||
+                backPoint.x <= externalBarriers.min.x ||
+                backPoint.x >= externalBarriers.max.x ||
+                backPoint.y <= externalBarriers.min.y ||
+                backPoint.y >= externalBarriers.max.y
+            )
+        {
+            return true;
+        }
+
+        // Controlla la collisione sia per il punto frontale che per il punto posteriore
+        for (const auto& barrier : barriers) {
+            if ((frontPoint.x >= barrier.min.x && frontPoint.x <= barrier.max.x &&
+                frontPoint.y >= barrier.min.y && frontPoint.y <= barrier.max.y) || // check if front point is in barrier
+                (backPoint.x >= barrier.min.x && backPoint.x <= barrier.max.x &&
+                backPoint.y >= barrier.min.y && backPoint.y <= barrier.max.y))     // check if back point is in barrier
+            {
+//                std::cout << "-------- COLLISIONE ------------" << std::endl;
+                return true;  // Collisione rilevata
+            }
+        }
+        return false;
+    }
+
+    std::vector<glm::vec2> generateCenters(int coord, int step) {
+        std::vector<glm::vec2> centers;
+
+        for (int i = -coord; i <= coord; i+=step) {
+            for (int j = -coord; j <= coord; j+=step) {
+                centers.push_back(glm::vec2(static_cast<float>(i), static_cast<float>(j)));
+            }
+        }
+
+        return centers;
+    }
+
+    std::vector<BoundingBox> getBarriers(const std::vector<glm::vec2>& centers, float sideLength) {
+        std::vector<BoundingBox> barriers;
+        float halfSide = sideLength / 2.0f;
+
+        for (const auto& center : centers) {
+            glm::vec2 min = {center.x - halfSide, center.y - halfSide};
+            glm::vec2 max = {center.x + halfSide, center.y + halfSide};
+            barriers.push_back({min, max});
+        }
+
+        return barriers;
+    }
+
+
 };
 
 // This is the main: probably you do not need to touch this!
@@ -732,4 +829,5 @@ int main() {
 
     return EXIT_SUCCESS;
 }
+
 
