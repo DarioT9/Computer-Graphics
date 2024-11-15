@@ -480,13 +480,15 @@ protected:
 		static float dampedVel = 0.0f;
 
 
+        glm::vec3 proposedPos = ScooterPos;
+
         glm::mat4 M;
 
 
         //tentativo
         const float STEERING_SPEED = glm::radians(30.0f);
 		const float ROT_SPEED = glm::radians(120.0f);
-		const float MOVE_SPEED = 7.0f;
+		const float MOVE_SPEED = 10.0f;
 
 		SteeringAng += -m.x * STEERING_SPEED * deltaT;
 		SteeringAng = (SteeringAng < glm::radians(-35.0f) ? glm::radians(-35.0f) :
@@ -502,20 +504,20 @@ protected:
 
         if(dampedVel != 0.0f) {
 
-            glm::vec3 oldPos = ScooterPos;
+            glm::vec3 oldPos = proposedPos;
             if(SteeringAng != 0.0f) {
 				const float l = 2.78f;
 				float r = l / tan(SteeringAng);
-				float cx = ScooterPos.x + r * cos(Yaw);
-				float cz = ScooterPos.z - r * sin(Yaw);
+				float cx = proposedPos.x + r * cos(Yaw);
+				float cz = proposedPos.z - r * sin(Yaw);
 				float Dbeta = dampedVel / r;
 				Yaw = Yaw - Dbeta;
                 Roll = Roll - Dbeta;
-				ScooterPos.x = cx - r * cos(Yaw);
-				ScooterPos.z = cz + r * sin(Yaw);
+				proposedPos.x = cx - r * cos(Yaw);
+				proposedPos.z = cz + r * sin(Yaw);
 			} else {
-				ScooterPos.x = ScooterPos.x - sin(Yaw) * dampedVel;
-				ScooterPos.z = ScooterPos.z - cos(Yaw) * dampedVel;
+				proposedPos.x = proposedPos.x - sin(Yaw) * dampedVel;
+				proposedPos.z = proposedPos.z - cos(Yaw) * dampedVel;
 			}
 			if(m.x == 0) {
 				if(SteeringAng > STEERING_SPEED * deltaT) {
@@ -528,8 +530,6 @@ protected:
 			}
 
         }
-
-        glm::vec3 proposedPos = ScooterPos;
 
 /*
         if (proposedPos != ScooterPos) {
