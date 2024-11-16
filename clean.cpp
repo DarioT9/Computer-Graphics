@@ -19,21 +19,6 @@ std::vector<BoundingBox> barriers = {
 };
 */
 
-#define PI 3.14159265359
-
-struct BoundingBox {
-    glm::vec2 min;
-    glm::vec2 max;
-};
-
-/*
-std::vector<BoundingBox> barriers = {
-//        {{-2.0f, -2.0f}, {2.0f, 2.0f}},  // Rettangolo tra (-2, -2) e (2, 2)
-        {{2.0f, 2.0f}, {22.0f, 22.0f}},    // Un altro rettangolo
-        // Aggiungi qui altri muri invisibili
-};
-*/
-
 struct GlobalUniformBufferObject {
     alignas(16) glm::vec3 lightDir;
     alignas(16) glm::vec4 lightColor;
@@ -143,11 +128,6 @@ std::vector<ModelOffsets> calculateOffsets(const std::string& filename) {
         globalIndexOffset += offsets.indexCount;
 
         modelOffsets.push_back(offsets);
-
-        std::cout << "Model: " << offsets.name
-                  << ", Vertex Offset: " << offsets.vertexOffset
-                  << ", Index Offset: " << offsets.indexOffset
-                  << ", Index Count: " << offsets.indexCount << std::endl;
     }
 
     return modelOffsets;
@@ -176,6 +156,7 @@ protected:
 
 // **A10** Place here the variable for the Pipeline
     Pipeline PScooter;
+    Pipeline PScooterFWheel;
     Pipeline PCity;
 
 /*
@@ -204,7 +185,6 @@ protected:
     glm::mat4 ViewMatrix;
 
     float Ar;
-	glm::vec3 ScooterPos;
 	glm::vec3 ScooterPos;
 	glm::vec3 InitialPos;
     float Yaw = 0;
@@ -306,7 +286,8 @@ protected:
 // **A10** Place here the initialization of the pipeline. Remember that it should use shaders in files
 //		"shaders/NormalMapVert.spv" and "shaders/NormalMapFrag.spv", it should receive the new VertexDescriptor you defined
 //		And should receive two DescriptorSetLayout, the first should be DSLGlobal, while the other must be the one you defined
-        PScooter.init(this, &VDScooter, "shaders/NormalMapVert.spv", "shaders/NormalMapFrag.spv", {&DSLGlobal, &DSLScooter, &DSLScooterFWheel});
+        PScooter.init(this, &VDScooter, "shaders/NormalMapVert.spv", "shaders/NormalMapFrag.spv", {&DSLGlobal, &DSLScooter});
+        PScooterFWheel.init(this, &VDScooterFWheel, "shaders/NormalMapVert.spv", "shaders/NormalMapFrag.spv", {&DSLGlobal, &DSLScooterFWheel});
         PCity.init(this, &VDCity, "shaders/NormalMapVert.spv", "shaders/CityFrag.spv", {&DSLGlobal, &DSLCity});
 
 // **A10** Place here the loading of the model. It should be contained in file "models/Sphere.gltf", it should use the
@@ -352,13 +333,12 @@ protected:
         ViewMatrix = glm::translate(glm::mat4(1), -CamPos);
 
         ScooterPos = glm::vec3(0.0f, 0.0f, 0.0f);  // Imposta la posizione iniziale dello scooter
-
-        ScooterPos = glm::vec3(0.0f, 0.0f, 0.0f);  // Imposta la posizione iniziale dello scooter
     }
 
     // Here you create your pipelines and Descriptor Sets!
     void pipelinesAndDescriptorSetsInit() {
 // **A10** Add the pipeline creation
+        PScooterFWheel.create();
         PScooter.create();
         PCity.create();
 
@@ -377,6 +357,7 @@ protected:
     // All the object classes defined in Starter.hpp have a method .cleanup() for this purpose
     void pipelinesAndDescriptorSetsCleanup() {
 // **A10** Add the pipeline cleanup
+        PScooterFWheel.cleanup();
         PScooter.cleanup();
         PCity.cleanup();
 
@@ -415,6 +396,7 @@ protected:
         DSLCity.cleanup();
 
 // **A10** Add the cleanup for the pipeline
+        PScooterFWheel.destroy();
         PScooter.destroy();
         PCity.destroy();
 
@@ -427,13 +409,13 @@ protected:
     void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
 
 // **A10** Add the commands to bind the pipeline, the mesh its two descriptor setes, and the draw call of the planet
+
+        std::cout << "test\n";
         
         std::vector<ModelOffsets> ScooterOffsets = calculateOffsets("models/Scooter.obj");
         uint32_t FWheelSize = ScooterOffsets[3].indexCount;
         uint32_t FWheelIndexOffset = ScooterOffsets[3].indexOffset;
         uint32_t FWheelVertexOffset = ScooterOffsets[3].vertexOffset;
-
-        std::cout << "Troubleshoot: " << ScooterOffsets[3].indexCount;
 
         PScooter.bind(commandBuffer);
         MScooter.bind(commandBuffer);
@@ -443,8 +425,11 @@ protected:
         vkCmdDrawIndexed(commandBuffer,
                          static_cast<uint32_t>(MScooter.indices.size()), 1, 0, 0, 0);
         
+        PScooterFWheel.bind(commandBuffer);
         MFWheel.bind(commandBuffer);
-        DSScooterFWheel.bind(commandBuffer, PScooter, 2, currentImage);
+
+        DSGlobal.bind(commandBuffer, PScooter, 0, currentImage);
+        DSScooterFWheel.bind(commandBuffer, PScooterFWheel, 1, currentImage);
         vkCmdDrawIndexed(commandBuffer,
                          FWheelSize, 1, FWheelIndexOffset, FWheelVertexOffset, 0);
 
@@ -494,7 +479,6 @@ protected:
 		const glm::vec3 Cam1stPos = glm::vec3(0.49061f, 2.07f, 2.7445f);
         
 		glm::vec3 CamPos = ScooterPos;
-		glm::vec3 CamPos = ScooterPos;
 		static glm::vec3 dampedCamPos = CamPos;
         static float SteeringAng = 0.0f;
 		static float wheelRoll = 0.0f;
@@ -506,8 +490,8 @@ protected:
         glm::mat4 M;
 
 
-        //tentativo
-        const float STEERING_SPEED = glm::radians(30.0f);
+        //Velocity and steering equations
+        const float STEERING_SPEED = glm::radians(60.0f);
 		const float ROT_SPEED = glm::radians(120.0f);
 		const float MOVE_SPEED = 10.0f;
 
@@ -563,13 +547,38 @@ protected:
             ScooterPos = proposedPos;
         }
 
+        glm::mat4 Mv;
+
         glm::mat4 Wm = glm::translate(glm::mat4(1), ScooterPos) * glm::rotate(glm::mat4(1), ang + Yaw, glm::vec3(0,1,0))
                                                          * glm::rotate(glm::mat4(1), ang - SteeringAng, glm::vec3(0,0,1));
 
         glm::mat4 FWm = glm::translate(glm::mat4(1), ScooterPos) * glm::rotate(glm::mat4(1), ang + Yaw*3.0f, glm::vec3(0,1,0));
 
-        // The Fly model update proc.
-        if((currScene == 0)) {
+        if(glfwGetKey(window, GLFW_KEY_SPACE)){
+            if(!debounce) {
+				debounce = true;
+				curDebounce = GLFW_KEY_SPACE;
+				if(currScene != 1) {
+					currScene = 1;
+				}else if(currScene == 1) {
+					currScene = 0;
+				}
+
+				RebuildPipeline();
+			}
+        }else {
+			if((curDebounce == GLFW_KEY_SPACE) && debounce) {
+				debounce = false;
+				curDebounce = 0;
+			}
+		}
+
+        if(glfwGetKey(window, GLFW_KEY_ESCAPE)) {
+			glfwSetWindowShouldClose(window, GL_TRUE);
+		}
+
+        //Perspective camera
+        if(currScene == 0) {
 			CamYaw += ROT_SPEED * deltaT * r.y;
 			CamPitch -= ROT_SPEED * deltaT * r.x;
 			CamRoll -= ROT_SPEED * deltaT * r.z;
@@ -588,10 +597,28 @@ protected:
 			dampedCamPos = CamPos * (1 - exp(-lambdaCam * deltaT)) +
 						 dampedCamPos * exp(-lambdaCam * deltaT); 
 			M = MakeViewProjectionLookAt(dampedCamPos, CamTarget, glm::vec3(0,1,0), CamRoll, glm::radians(90.0f), Ar, 0.1f, 500.0f);
-		}
+            Mv = ViewMatrix;
+		}else if(currScene == 1){ //Isometric camera
+            M = glm::mat4(1.0f / 10.0f, 0, 0, 0,
+                  0, -4.0f / 30.0f, 0, 0,
+                  0, 0, 1.0f/(-500.0f-500.0f), 0,
+                  0, 0, -500.0f/(-500.0f-500.0f), 1)*
+                glm::mat4(1, 0, 0, 0,
+                  0, glm::cos(glm::radians(-35.26f)), -glm::sin(glm::radians(-35.26f)), 0,
+                  0, glm::sin(glm::radians(-35.26f)), glm::cos(glm::radians(-35.26f)), 0,
+                  0, 0, 0, 1) *
+                glm::mat4(glm::cos(glm::radians(-45.0f)), 0, -glm::sin(glm::radians(-45.0f)), 0,
+                  0, 1, 0, 0,
+                  glm::sin(glm::radians(-45.0f)), 0, glm::cos(glm::radians(-45.0f)), 0,
+                  0, 0, 0, 1);
+            Mv =  glm::inverse(
+							glm::translate(glm::mat4(1), ScooterPos) *
+							glm::rotate(glm::mat4(1), DlookAng, glm::vec3(0,1,0))
+						);
+        }
         // Here is where you actually update your uniforms
 
-        glm::mat4 Mv = ViewMatrix;
+        
 
         glm::mat4 ViewPrj =  M * Mv;
 
@@ -661,80 +688,6 @@ protected:
 
         DSCity.map(currentImage, &CityParUbo, 2);
 
-    }
-
-    bool checkCollision(glm::vec3 centerPos, float angle, float halfLength) {
-        // Direzione della moto basata sul suo orientamento
-/*        glm::vec2 direction(cos(angle), sin(angle));
-        glm::vec2 perpendicularDirection(-direction.y, direction.x);*/
-        glm::vec2 direction(-sin(angle), cos(angle));
-
-
-        // Calcola i punti davanti e dietro al baricentro
-        glm::vec2 frontPoint = glm::vec2(centerPos.x, centerPos.z) + halfLength * direction;
-        glm::vec2 backPoint = glm::vec2(centerPos.x, centerPos.z) - halfLength * direction;
-
-/*
-        if (print) {
-            std::cout << "Front point: \t" << frontPoint.x << ", \t" << frontPoint.y << std::endl;
-            std::cout << "Center: \t" << centerPos.x << ", \t" << centerPos.z << std::endl;
-            std::cout << "Back point: \t" << backPoint.x << ", \t" << backPoint.y << std::endl;
-            std::cout << "Angle: \t" << angle << ", \t" <<angle*180/PI << std::endl;
-            std::cout << "---------------------------------------" << std::endl;
-        }
-*/
-        // Check if the scooter is outside the external barriers
-        if (
-                frontPoint.x <= externalBarriers.min.x ||
-                frontPoint.x >= externalBarriers.max.x ||
-                frontPoint.y <= externalBarriers.min.y ||
-                frontPoint.y >= externalBarriers.max.y ||
-                backPoint.x <= externalBarriers.min.x ||
-                backPoint.x >= externalBarriers.max.x ||
-                backPoint.y <= externalBarriers.min.y ||
-                backPoint.y >= externalBarriers.max.y
-            )
-        {
-            return true;
-        }
-
-        // Controlla la collisione sia per il punto frontale che per il punto posteriore
-        for (const auto& barrier : barriers) {
-            if ((frontPoint.x >= barrier.min.x && frontPoint.x <= barrier.max.x &&
-                frontPoint.y >= barrier.min.y && frontPoint.y <= barrier.max.y) || // check if front point is in barrier
-                (backPoint.x >= barrier.min.x && backPoint.x <= barrier.max.x &&
-                backPoint.y >= barrier.min.y && backPoint.y <= barrier.max.y))     // check if back point is in barrier
-            {
-//                std::cout << "-------- COLLISIONE ------------" << std::endl;
-                return true;  // Collisione rilevata
-            }
-        }
-        return false;
-    }
-
-    std::vector<glm::vec2> generateCenters(int coord, int step) {
-        std::vector<glm::vec2> centers;
-
-        for (int i = -coord; i <= coord; i+=step) {
-            for (int j = -coord; j <= coord; j+=step) {
-                centers.push_back(glm::vec2(static_cast<float>(i), static_cast<float>(j)));
-            }
-        }
-
-        return centers;
-    }
-
-    std::vector<BoundingBox> getBarriers(const std::vector<glm::vec2>& centers, float sideLength) {
-        std::vector<BoundingBox> barriers;
-        float halfSide = sideLength / 2.0f;
-
-        for (const auto& center : centers) {
-            glm::vec2 min = {center.x - halfSide, center.y - halfSide};
-            glm::vec2 max = {center.x + halfSide, center.y + halfSide};
-            barriers.push_back({min, max});
-        }
-
-        return barriers;
     }
 
 
