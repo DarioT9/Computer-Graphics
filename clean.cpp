@@ -236,16 +236,6 @@ protected:
                 {6, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 5, 1},  // Texture Ambient Occlusion
                 {7, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(ScooterParametersUniformBufferObject), 1},
         });
-        DSLScooterFWheel.init(this, {
-                {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(ScooterFWheelMatricesUniformBufferObject), 1},  // Matrice uniforme del modello scooter
-                {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1},  // Texture Base Color
-                {2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1},  // Texture Normal
-                {3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 2, 1},  // Texture Height
-                {4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3, 1},  // Texture Metallic
-                {5, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 4, 1},  // Texture Roughness
-                {6, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 5, 1},  // Texture Ambient Occlusion
-                {7, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(ScooterFWheelParametersUniformBufferObject), 1},
-        });
         DSLCity.init(this, {
                 {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(CityMatricesUniformBufferObject), 1},  // Matrice uniforme del modello scooter
                 {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1},  // Texture Base Color
@@ -263,16 +253,6 @@ protected:
                                {0, 3, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(ScooterVertex, tan), sizeof(glm::vec4), TANGENT}  // Tangente (4 componenti float)
                        });
 
-        VDScooterFWheel.init(this, {
-                {0, sizeof(ScooterFWheelVertex), VK_VERTEX_INPUT_RATE_VERTEX}  // Descrive la dimensione del vertice e la frequenza di input
-        }, {
-                               // Descrizione degli attributi dei vertici
-                               {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(ScooterFWheelVertex, pos), sizeof(glm::vec3), POSITION},  // Posizione (3 componenti float)
-                               {0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(ScooterFWheelVertex, norm), sizeof(glm::vec3), NORMAL},    // Normale (3 componenti float)
-                               {0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(ScooterFWheelVertex, UV), sizeof(glm::vec2), UV},             // UV (2 componenti float)
-                               {0, 3, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(ScooterFWheelVertex, tan), sizeof(glm::vec4), TANGENT}  // Tangente (4 componenti float)
-                       });
-
         VDCity.init(this, {
                 {0, sizeof(CityVertex), VK_VERTEX_INPUT_RATE_VERTEX}  // Descrive la dimensione del vertice e la frequenza di input
         }, {
@@ -287,13 +267,11 @@ protected:
 //		"shaders/NormalMapVert.spv" and "shaders/NormalMapFrag.spv", it should receive the new VertexDescriptor you defined
 //		And should receive two DescriptorSetLayout, the first should be DSLGlobal, while the other must be the one you defined
         PScooter.init(this, &VDScooter, "shaders/NormalMapVert.spv", "shaders/NormalMapFrag.spv", {&DSLGlobal, &DSLScooter});
-        PScooterFWheel.init(this, &VDScooterFWheel, "shaders/NormalMapVert.spv", "shaders/NormalMapFrag.spv", {&DSLGlobal, &DSLScooterFWheel});
         PCity.init(this, &VDCity, "shaders/NormalMapVert.spv", "shaders/CityFrag.spv", {&DSLGlobal, &DSLCity});
 
 // **A10** Place here the loading of the model. It should be contained in file "models/Sphere.gltf", it should use the
 //		Vertex descriptor you defined, and be of GLTF format.
         MScooter.init(this, &VDScooter, "models/Scooter.obj", OBJ);
-        MFWheel.init(this, &VDScooterFWheel, "models/Scooter.obj",OBJ);
         MCity.init(this, &VDCity, "models/road.obj", OBJ);
 
 // **A10** Place here the loading of the four textures
@@ -321,9 +299,9 @@ protected:
         // WARNING!!!!!!!!
         // Must be set before initializing the text and the scene
 // **A10** Update the number of elements to correctly size the descriptor sets pool
-        DPSZs.uniformBlocksInPool = 1 + 2 + 2 + 2; // ScooterMatrixUniformBufferObject and ScooterShaderParametersUniformBufferObject, same for City and front wheel
+        DPSZs.uniformBlocksInPool = 1 + 2 + 2; // ScooterMatrixUniformBufferObject and ScooterShaderParameterdsUniformBufferObject, same for City
         DPSZs.texturesInPool = 6 + 1; // Textures (TScooterBaseColor, TScooterNormal, TScooterHeight, TScooterMetallic, TScooterRoughness, TScooterAmbientOcclusion) + 1 for city
-        DPSZs.setsInPool = 1 + 1 + 1 + 1; // DSScooter and DSCity and DSScooterFWheel
+        DPSZs.setsInPool = 1 + 1 + 1; // DSScooter and DSCity
 
         std::cout << "Initialization completed!\n";
         std::cout << "Uniform Blocks in the Pool  : " << DPSZs.uniformBlocksInPool << "\n";
@@ -338,7 +316,6 @@ protected:
     // Here you create your pipelines and Descriptor Sets!
     void pipelinesAndDescriptorSetsInit() {
 // **A10** Add the pipeline creation
-        PScooterFWheel.create();
         PScooter.create();
         PCity.create();
 
@@ -346,7 +323,6 @@ protected:
 
 //        Texture TScooterAmbientOcclusion, TScooterBaseColor, TScooterNormal, TScooterHeight, TScooterMetallic, TScooterRoughness;
         DSScooter.init(this,&DSLScooter,{&TScooterBaseColor, &TScooterNormal, &TScooterHeight, &TScooterMetallic, &TScooterRoughness, &TScooterAmbientOcclusion});
-        DSScooterFWheel.init(this,&DSLScooterFWheel,{&TScooterBaseColor, &TScooterNormal, &TScooterHeight, &TScooterMetallic, &TScooterRoughness, &TScooterAmbientOcclusion});
         DSCity.init(this,&DSLCity,{&TCity});
 
 
@@ -357,7 +333,6 @@ protected:
     // All the object classes defined in Starter.hpp have a method .cleanup() for this purpose
     void pipelinesAndDescriptorSetsCleanup() {
 // **A10** Add the pipeline cleanup
-        PScooterFWheel.cleanup();
         PScooter.cleanup();
         PCity.cleanup();
 
@@ -365,7 +340,6 @@ protected:
 
 // **A10** Add the descriptor set cleanup
         DSScooter.cleanup();
-        DSScooterFWheel.cleanup();
         DSCity.cleanup();
     }
 
@@ -383,7 +357,6 @@ protected:
         TScooterRoughness.cleanup();
         TScooterAmbientOcclusion.cleanup();
         MScooter.cleanup();
-        MFWheel.cleanup();
 
         TCity.cleanup();
         MCity.cleanup();
@@ -392,11 +365,9 @@ protected:
 
 // **A10** Add the cleanup for the descriptor set layout
         DSLScooter.cleanup();
-        DSLScooterFWheel.cleanup();
         DSLCity.cleanup();
 
 // **A10** Add the cleanup for the pipeline
-        PScooterFWheel.destroy();
         PScooter.destroy();
         PCity.destroy();
 
@@ -413,10 +384,6 @@ protected:
         std::cout << "test\n";
         
         std::vector<ModelOffsets> ScooterOffsets = calculateOffsets("models/Scooter.obj");
-        uint32_t FWheelSize = ScooterOffsets[3].indexCount;
-        uint32_t FWheelIndexOffset = ScooterOffsets[3].indexOffset;
-        uint32_t FWheelVertexOffset = ScooterOffsets[3].vertexOffset;
-
         PScooter.bind(commandBuffer);
         MScooter.bind(commandBuffer);
         
@@ -425,14 +392,6 @@ protected:
         vkCmdDrawIndexed(commandBuffer,
                          static_cast<uint32_t>(MScooter.indices.size()), 1, 0, 0, 0);
         
-        PScooterFWheel.bind(commandBuffer);
-        MFWheel.bind(commandBuffer);
-
-        DSGlobal.bind(commandBuffer, PScooter, 0, currentImage);
-        DSScooterFWheel.bind(commandBuffer, PScooterFWheel, 1, currentImage);
-        vkCmdDrawIndexed(commandBuffer,
-                         FWheelSize, 1, FWheelIndexOffset, FWheelVertexOffset, 0);
-
 
 // 2. Binding del pipeline e del modello per la città
         PCity.bind(commandBuffer);                // Pipeline per la città
@@ -636,9 +595,6 @@ protected:
         ScooterMatricesUniformBufferObject ScooterUbo{};
         ScooterParametersUniformBufferObject ScooterParUbo{};
 
-        ScooterFWheelMatricesUniformBufferObject FWUbo{};
-        ScooterFWheelParametersUniformBufferObject FWParUbo{};
-
         CityMatricesUniformBufferObject CityUbo{};
         CityParametersUniformBufferObject CityParUbo{};
 
@@ -648,18 +604,12 @@ protected:
 		ScooterUbo.mvpMat = ViewPrj * ScooterUbo.mMat;
 		ScooterUbo.nMat = glm::inverse(glm::transpose(ScooterUbo.mMat));
 
-        FWUbo.mMat = FWm * glm::mat4(1.0f);
-		FWUbo.mvpMat = ViewPrj * FWUbo.mMat;
-		FWUbo.nMat = glm::inverse(glm::transpose(FWUbo.mMat));
-
         CityUbo.mMat = glm::mat4(1.0f);
         CityUbo.nMat = glm::mat4(1.0f);
         CityUbo.mvpMat = ViewPrj;
 
         // These informations should be used to fill the Uniform Buffer Object in Binding 0 of your DSL
         DSScooter.map(currentImage, &ScooterUbo, 0);
-
-        DSScooterFWheel.map(currentImage, &FWUbo, 0);
 
         DSCity.map(currentImage, &CityUbo, 0);
 
@@ -668,8 +618,6 @@ protected:
         // Where you replace XXX.Power with the field of the local variable corresponding to the uniform buffer object
         ScooterParUbo.Pow = 200.0f;
 
-        FWParUbo.Pow = 200.0f;
-
         CityParUbo.Pow = 200.0f;
 
         // The textre angle parameter of the uniform buffer containing the material parameters of the new object shoud be set to: tTime * TangTurnTimeFact
@@ -677,14 +625,10 @@ protected:
         // Where you replace XXX.Ang with the local field of the variable corresponding to the uniform buffer object
         ScooterParUbo.Ang = 0.0f;
 
-        FWParUbo.Ang = 0.0f;
-
         CityParUbo.Ang = 0.0f;
 
         // These informations should be used to fill the Uniform Buffer Object in Binding 6 of your DSL
         DSScooter.map(currentImage, &ScooterParUbo, 7);
-
-        DSScooterFWheel.map(currentImage, &FWParUbo, 7);
 
         DSCity.map(currentImage, &CityParUbo, 2);
 
