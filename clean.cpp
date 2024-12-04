@@ -44,6 +44,23 @@ struct CityMatricesUniformBufferObject {
     alignas(16) glm::mat4 nMat;    // Normal matrix
 };
 
+#define NSKYSCRAPER 64
+struct SkyScraperMatricesUniformBufferObject {
+    alignas(16) glm::mat4 mvpMat[NSKYSCRAPER];  // Model-View-Projection matrix
+    alignas(16) glm::mat4 mMat[NSKYSCRAPER];    // Model matrix
+    alignas(16) glm::mat4 nMat[NSKYSCRAPER];    // Normal matrix
+};
+
+#define NLAMPPOST 256
+struct LampPostMatricesUniformBufferObject {
+    alignas(16) glm::mat4 mvpMat[NLAMPPOST];  // Model-View-Projection matrix
+    alignas(16) glm::mat4 mMat[NLAMPPOST];    // Model matrix
+    alignas(16) glm::mat4 nMat[NLAMPPOST];    // Normal matrix
+};
+
+struct skyBoxUniformBufferObject {
+    alignas(16) glm::mat4 mvpMat;           //usata per il rendering della skybox (la scatola che rappresenta il cielo o lo sfondo)
+};
 
 // **A10** Place here the CPP struct for the uniform buffer for the parameters
 struct ScooterParametersUniformBufferObject {
@@ -60,6 +77,17 @@ struct CityParametersUniformBufferObject {
     alignas(4) float Pow;  // Parametro di potenza speculare, simile a quello dello scooter
     alignas(4) float Ang;  // Parametro per eventuali trasformazioni basate sul tempo (opzionale)
 };
+
+struct SkyScraperParametersUniformBufferObject {
+    alignas(4) float Pow;  // Parametro di potenza speculare, simile a quello dello scooter
+    alignas(4) float Ang;  // Parametro per eventuali trasformazioni basate sul tempo (opzionale)
+};
+
+struct LampPostParametersUniformBufferObject {
+    alignas(4) float Pow;  // Parametro di potenza speculare, simile a quello dello scooter
+    alignas(4) float Ang;  // Parametro per eventuali trasformazioni basate sul tempo (opzionale)
+};
+
 
 
 // **A10** Place here the CPP struct for the vertex definition
@@ -82,6 +110,24 @@ struct CityVertex {
     glm::vec3 norm;  // Normale del vertex
     glm::vec2 UV;    // Coordinate UV per la texture
     glm::vec4 tan;   // Tangente per il normal mapping (opzionale, se il modello lo richiede)
+};
+
+struct SkyScraperVertex {
+    glm::vec3 pos;   // Posizione del vertex
+    glm::vec3 norm;  // Normale del vertex
+    glm::vec2 UV;    // Coordinate UV per la texture
+    glm::vec4 tan;   // Tangente per il normal mapping (opzionale, se il modello lo richiede)
+};
+
+struct LampPostVertex {
+    glm::vec3 pos;   // Posizione del vertex
+    glm::vec3 norm;  // Normale del vertex
+    glm::vec2 UV;    // Coordinate UV per la texture
+    glm::vec4 tan;   // Tangente per il normal mapping (opzionale, se il modello lo richiede)
+};
+
+struct skyBoxVertex {
+    glm::vec3 pos;
 };
 
 struct ModelOffsets {
@@ -147,17 +193,26 @@ protected:
     DescriptorSetLayout DSLScooter;
     DescriptorSetLayout DSLScooterFWheel;
     DescriptorSetLayout DSLCity;
+    DescriptorSetLayout DSLSkyScraper;
+    DescriptorSetLayout DSLLampPost;
+    DescriptorSetLayout DSLskyBox;	// For skyBox
 
 
 // **A10** Place here the variable for the VertexDescriptor
     VertexDescriptor VDScooter;
     VertexDescriptor VDScooterFWheel;
     VertexDescriptor VDCity;
+    VertexDescriptor VDSkyScraper;
+    VertexDescriptor VDLampPost;
+    VertexDescriptor VDskyBox;
 
 // **A10** Place here the variable for the Pipeline
     Pipeline PScooter;
     Pipeline PScooterFWheel;
     Pipeline PCity;
+    Pipeline PSkyScraper;
+    Pipeline PLampPost;
+    Pipeline PskyBox;
 
 /*
 	// Scenes and texts
@@ -171,11 +226,22 @@ protected:
     Model MScooter;
     Model MFWheel;
     Model MCity;
+    Model MSkyScraper;
+    Model MLampPost;
+    Model MskyBox;
+
     Texture TScooterBaseColor, TScooterNormal, TScooterHeight, TScooterMetallic, TScooterRoughness, TScooterAmbientOcclusion;
     Texture TCity;
+    Texture TSkyScraper;
+    Texture TLampPost;
+    Texture TskyBox;
+
     DescriptorSet DSScooter;
     DescriptorSet DSScooterFWheel;
     DescriptorSet DSCity;
+    DescriptorSet DSSkyScraper;
+    DescriptorSet DSLampPost;
+    DescriptorSet DSskyBox;
 
     // Other application parameters
     int currScene = 0;
@@ -241,6 +307,20 @@ protected:
                 {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1},  // Texture Base Color
                 {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(CityParametersUniformBufferObject), 1},
         });
+        DSLSkyScraper.init(this, {
+                {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(SkyScraperMatricesUniformBufferObject), 1},  // Matrice uniforme del modello scooter
+                {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1},  // Texture Base Color
+                {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(SkyScraperParametersUniformBufferObject), 1},
+        });
+        DSLLampPost.init(this, {
+                {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(LampPostMatricesUniformBufferObject), 1},  // Matrice uniforme del modello scooter
+                {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1},  // Texture Base Color
+                {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(LampPostParametersUniformBufferObject), 1},
+        });
+        DSLskyBox.init(this, {
+                {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(skyBoxUniformBufferObject), 1},
+                {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1}
+        });
 
 // **A10** Place here the initialization for the VertexDescriptor
         VDScooter.init(this, {
@@ -262,17 +342,49 @@ protected:
                             {0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(CityVertex, UV), sizeof(glm::vec2), UV},             // UV (2 componenti float)
                             {0, 3, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(CityVertex, tan), sizeof(glm::vec4), TANGENT}  // Tangente (4 componenti float)
                     });
+        VDSkyScraper.init(this, {
+                {0, sizeof(SkyScraperVertex), VK_VERTEX_INPUT_RATE_VERTEX}  // Descrive la dimensione del vertice e la frequenza di input
+        }, {
+                                  // Descrizione degli attributi dei vertici
+                                  {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(SkyScraperVertex, pos), sizeof(glm::vec3), POSITION},  // Posizione (3 componenti float)
+                                  {0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(SkyScraperVertex, norm), sizeof(glm::vec3), NORMAL},    // Normale (3 componenti float)
+                                  {0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(SkyScraperVertex, UV), sizeof(glm::vec2), UV},             // UV (2 componenti float)
+                                  {0, 3, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(SkyScraperVertex, tan), sizeof(glm::vec4), TANGENT}  // Tangente (4 componenti float)
+                          });
+        VDLampPost.init(this, {
+                {0, sizeof(LampPostVertex), VK_VERTEX_INPUT_RATE_VERTEX}  // Descrive la dimensione del vertice e la frequenza di input
+        }, {
+                                  // Descrizione degli attributi dei vertici
+                                  {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(LampPostVertex, pos), sizeof(glm::vec3), POSITION},  // Posizione (3 componenti float)
+                                  {0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(LampPostVertex, norm), sizeof(glm::vec3), NORMAL},    // Normale (3 componenti float)
+                                  {0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(LampPostVertex, UV), sizeof(glm::vec2), UV},             // UV (2 componenti float)
+                                  {0, 3, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(LampPostVertex, tan), sizeof(glm::vec4), TANGENT}  // Tangente (4 componenti float)
+                          });
+        VDskyBox.init(this, {
+                {0, sizeof(skyBoxVertex), VK_VERTEX_INPUT_RATE_VERTEX}
+        }, {
+                              {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(skyBoxVertex, pos),
+                               sizeof(glm::vec3), POSITION}
+                      });
 
 // **A10** Place here the initialization of the pipeline. Remember that it should use shaders in files
 //		"shaders/NormalMapVert.spv" and "shaders/NormalMapFrag.spv", it should receive the new VertexDescriptor you defined
 //		And should receive two DescriptorSetLayout, the first should be DSLGlobal, while the other must be the one you defined
         PScooter.init(this, &VDScooter, "shaders/NormalMapVert.spv", "shaders/NormalMapFrag.spv", {&DSLGlobal, &DSLScooter});
         PCity.init(this, &VDCity, "shaders/NormalMapVert.spv", "shaders/CityFrag.spv", {&DSLGlobal, &DSLCity});
+        PSkyScraper.init(this, &VDSkyScraper, "shaders/SkyScraperVert.spv", "shaders/SkyScraperFrag.spv", {&DSLGlobal, &DSLSkyScraper});
+        PLampPost.init(this, &VDLampPost, "shaders/LampPostVert.spv", "shaders/LampPostFrag.spv", {&DSLGlobal, &DSLLampPost});
+        PskyBox.init(this, &VDskyBox, "shaders/SkyBoxVert.spv", "shaders/SkyBoxFrag.spv", {&DSLskyBox});
+        PskyBox.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
+                                    VK_CULL_MODE_BACK_BIT, false);
 
 // **A10** Place here the loading of the model. It should be contained in file "models/Sphere.gltf", it should use the
 //		Vertex descriptor you defined, and be of GLTF format.
         MScooter.init(this, &VDScooter, "models/Scooter.obj", OBJ);
         MCity.init(this, &VDCity, "models/road.obj", OBJ);
+        MSkyScraper.init(this, &VDSkyScraper, "models/apartment_001.mgcg", MGCG);
+        MLampPost.init(this, &VDLampPost, "models/lamppost.mgcg", MGCG);
+        MskyBox.init(this, &VDskyBox, "models/SkyBoxCube.obj", OBJ);
 
 // **A10** Place here the loading of the four textures
 
@@ -294,14 +406,19 @@ protected:
 
         TCity.init(this, "textures/city/road.png");
 
+        TSkyScraper.init(this, "textures/skyScraper/apartment_001.png");
+
+        TLampPost.init(this, "textures/lampPost/lamppost.png");
+
+        TskyBox.init(this, "textures/starMap/starmap_g4k.jpg");
 
         // Descriptor pool sizes
         // WARNING!!!!!!!!
         // Must be set before initializing the text and the scene
 // **A10** Update the number of elements to correctly size the descriptor sets pool
-        DPSZs.uniformBlocksInPool = 1 + 2 + 2; // ScooterMatrixUniformBufferObject and ScooterShaderParameterdsUniformBufferObject, same for City
-        DPSZs.texturesInPool = 6 + 1; // Textures (TScooterBaseColor, TScooterNormal, TScooterHeight, TScooterMetallic, TScooterRoughness, TScooterAmbientOcclusion) + 1 for city
-        DPSZs.setsInPool = 1 + 1 + 1; // DSScooter and DSCity
+        DPSZs.uniformBlocksInPool = 1 + 2 + 2 + 2 + 2 + 1; // ScooterMatrixUniformBufferObject and ScooterShaderParameterdsUniformBufferObject, same for City, same for SkyScraper, same for LampPost, 1 for SkyBox
+        DPSZs.texturesInPool = 6 + 1 + 1 + 1 + 1; // Textures (TScooterBaseColor, TScooterNormal, TScooterHeight, TScooterMetallic, TScooterRoughness, TScooterAmbientOcclusion) + 1 for city + 1 for SkyScraper + 1 for LampPost + 1 for Skybox
+        DPSZs.setsInPool = 1 + 1 + 1 + 1 + 1 + 1; // DSScooter and DSCity and DSSkyScraper and DSLampPost and DSSkyBox
 
         std::cout << "Initialization completed!\n";
         std::cout << "Uniform Blocks in the Pool  : " << DPSZs.uniformBlocksInPool << "\n";
@@ -318,13 +435,18 @@ protected:
 // **A10** Add the pipeline creation
         PScooter.create();
         PCity.create();
+        PSkyScraper.create();
+        PLampPost.create();
+        PskyBox.create();
 
 // **A10** Add the descriptor set creation
 
 //        Texture TScooterAmbientOcclusion, TScooterBaseColor, TScooterNormal, TScooterHeight, TScooterMetallic, TScooterRoughness;
         DSScooter.init(this,&DSLScooter,{&TScooterBaseColor, &TScooterNormal, &TScooterHeight, &TScooterMetallic, &TScooterRoughness, &TScooterAmbientOcclusion});
         DSCity.init(this,&DSLCity,{&TCity});
-
+        DSSkyScraper.init(this,&DSLSkyScraper,{&TSkyScraper});
+        DSLampPost.init(this,&DSLLampPost,{&TLampPost});
+        DSskyBox.init(this, &DSLskyBox, {&TskyBox});
 
         DSGlobal.init(this, &DSLGlobal, {});
     }
@@ -335,12 +457,18 @@ protected:
 // **A10** Add the pipeline cleanup
         PScooter.cleanup();
         PCity.cleanup();
+        PSkyScraper.cleanup();
+        PLampPost.cleanup();
+        PskyBox.cleanup();
 
         DSGlobal.cleanup();
 
 // **A10** Add the descriptor set cleanup
         DSScooter.cleanup();
         DSCity.cleanup();
+        DSSkyScraper.cleanup();
+        DSLampPost.cleanup();
+        DSskyBox.cleanup();
     }
 
     // Here you destroy all the Models, Texture and Desc. Set Layouts you created!
@@ -361,15 +489,30 @@ protected:
         TCity.cleanup();
         MCity.cleanup();
 
+        TSkyScraper.cleanup();
+        MSkyScraper.cleanup();
+
+        TLampPost.cleanup();
+        MLampPost.cleanup();
+
+        TskyBox.cleanup();
+        MskyBox.cleanup();
+
         DSLGlobal.cleanup();
 
 // **A10** Add the cleanup for the descriptor set layout
         DSLScooter.cleanup();
         DSLCity.cleanup();
+        DSLSkyScraper.cleanup();
+        DSLLampPost.cleanup();
+        DSLskyBox.cleanup();
 
 // **A10** Add the cleanup for the pipeline
         PScooter.destroy();
         PCity.destroy();
+        PSkyScraper.destroy();
+        PLampPost.destroy();
+        PskyBox.destroy();
 
     }
 
@@ -382,16 +525,16 @@ protected:
 // **A10** Add the commands to bind the pipeline, the mesh its two descriptor setes, and the draw call of the planet
 
         std::cout << "test\n";
-        
+
         std::vector<ModelOffsets> ScooterOffsets = calculateOffsets("models/Scooter.obj");
         PScooter.bind(commandBuffer);
         MScooter.bind(commandBuffer);
-        
+
         DSGlobal.bind(commandBuffer, PScooter, 0, currentImage);
         DSScooter.bind(commandBuffer, PScooter, 1, currentImage);
         vkCmdDrawIndexed(commandBuffer,
                          static_cast<uint32_t>(MScooter.indices.size()), 1, 0, 0, 0);
-        
+
 
 // 2. Binding del pipeline e del modello per la città
         PCity.bind(commandBuffer);                // Pipeline per la città
@@ -404,7 +547,41 @@ protected:
 // Comando di disegno per la città
         vkCmdDrawIndexed(commandBuffer,
                          static_cast<uint32_t>(MCity.indices.size()), 1, 0, 0, 0);
+
+// 3. Binding del pipeline e del modello per lo SkyScraper
+        PSkyScraper.bind(commandBuffer);                // Pipeline per la città
+        MSkyScraper.bind(commandBuffer);                // Modello della città
+
+// Binding dei descriptor set globali e quelli specifici dello SkyScraper
+        DSGlobal.bind(commandBuffer, PSkyScraper, 0, currentImage);    // Descriptor Set globale per lo SkyScraper
+        DSSkyScraper.bind(commandBuffer, PSkyScraper, 1, currentImage);      // Descriptor Set per lo SkyScraper
+
+// Comando di disegno per lo SkyScraper
+        vkCmdDrawIndexed(commandBuffer,
+                         static_cast<uint32_t>(MSkyScraper.indices.size()), NSKYSCRAPER, 0, 0, 0);
+
+// 4. Binding del pipeline e del modello per il LampPost
+        PLampPost.bind(commandBuffer);                // Pipeline per la città
+        MLampPost.bind(commandBuffer);                // Modello della città
+
+// Binding dei descriptor set globali e quelli specifici del LampPost
+        DSGlobal.bind(commandBuffer, PLampPost, 0, currentImage);    // Descriptor Set globale per il LampPost
+        DSLampPost.bind(commandBuffer, PLampPost, 1, currentImage);      // Descriptor Set per il LampPost
+
+// Comando di disegno per il LampPost
+        vkCmdDrawIndexed(commandBuffer,
+                         static_cast<uint32_t>(MLampPost.indices.size()), NLAMPPOST, 0, 0, 0);
+
+//5. Binding del pipeline e del modello per lo SkyBox
+        PskyBox.bind(commandBuffer);
+        MskyBox.bind(commandBuffer);
+        DSskyBox.bind(commandBuffer, PskyBox, 0, currentImage);
+        // Disegna il cielo
+        vkCmdDrawIndexed(commandBuffer,
+                         static_cast<uint32_t>(MskyBox.indices.size()), 1, 0, 0, 0);
+
     }
+
 
     // Here is where you update the uniforms.
     // Very likely this will be where you will be writing the logic of your application.
@@ -598,6 +775,14 @@ protected:
         CityMatricesUniformBufferObject CityUbo{};
         CityParametersUniformBufferObject CityParUbo{};
 
+        SkyScraperMatricesUniformBufferObject SkyScraperUbo{};
+        SkyScraperParametersUniformBufferObject SkyScraperParUbo{};
+
+        LampPostMatricesUniformBufferObject LampPostUbo{};
+        LampPostParametersUniformBufferObject LampPostParUbo{};
+
+        skyBoxUniformBufferObject SkyBoxUbo{};
+
         // World and normal matrix should be the identiy. The World-View-Projection should be variable ViewPrj
         
         ScooterUbo.mMat = Wm * glm::mat4(1.0f);
@@ -608,10 +793,85 @@ protected:
         CityUbo.nMat = glm::mat4(1.0f);
         CityUbo.mvpMat = ViewPrj;
 
+        for (int i = 0; i < NSKYSCRAPER; i++) {
+            // Aggiorna la matrice del modello per il grattacielo corrente
+
+            SkyScraperUbo.mMat[i] = glm::translate(glm::mat4(1.0f), glm::vec3(84.0 - (24.0 * (i % 8)),0.0,84 - (24 * (i / 8))));
+
+            // Calcola la matrice MVP per il grattacielo corrente
+            SkyScraperUbo.mvpMat[i] = ViewPrj * SkyScraperUbo.mMat[i];
+
+            // Calcola la matrice normale per il grattacielo corrente
+            SkyScraperUbo.nMat[i] = glm::inverse(glm::transpose(SkyScraperUbo.mMat[i]));
+        }
+
+        for(int i = 0; i < NLAMPPOST/4; i++) {
+            LampPostUbo.mMat[i * 4] =
+                    glm::translate(glm::mat4(1.0f), glm::vec3(75 - (24 * (i % 8)), 0.0, 85 - (24 * (i / 8)))) *
+                    glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+            LampPostUbo.mvpMat[i * 4] = ViewPrj * LampPostUbo.mMat[i * 4];
+            LampPostUbo.nMat[i * 4] = glm::inverse(glm::transpose(LampPostUbo.mMat[i * 4]));
+            LampPostUbo.mMat[i * 4 + 1] =
+                    glm::translate(glm::mat4(1.0f), glm::vec3(84 - (24 * (i % 8)), 0.0, 75 - (24 * (i / 8)))) *
+                    glm::rotate(glm::mat4(1.0f), glm::radians(-180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+            LampPostUbo.mvpMat[i * 4 + 1] = ViewPrj * LampPostUbo.mMat[i * 4 + 1];
+            LampPostUbo.nMat[i * 4 + 1] = glm::inverse(glm::transpose(LampPostUbo.mMat[i * 4 + 1]));
+            LampPostUbo.mMat[i * 4 + 2] =
+                    glm::translate(glm::mat4(1.0f), glm::vec3(93 - (24 * (i % 8)), 0.0, 85 - (24 * (i / 8)))) *
+                    glm::rotate(glm::mat4(1.0f), glm::radians(-270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+            LampPostUbo.mvpMat[i * 4 + 2] = ViewPrj * LampPostUbo.mMat[i * 4 + 2];
+            LampPostUbo.nMat[i * 4 + 2] = glm::inverse(glm::transpose(LampPostUbo.mMat[i * 4 + 2]));
+            LampPostUbo.mMat[i * 4 + 3] = glm::translate(glm::mat4(1.0f), glm::vec3(84 - (24 * (i % 8)), 0.0, 93 - (24 * (i / 8))));
+            LampPostUbo.mvpMat[i * 4 + 3] = ViewPrj * LampPostUbo.mMat[i * 4 + 3];
+            LampPostUbo.nMat[i * 4 + 3] = glm::inverse(glm::transpose(LampPostUbo.mMat[i * 4 + 3]));
+        }
+
+        /*
+        LampPostUbo.mMat[0] = glm::translate(glm::mat4(1.0f), glm::vec3(3.0,0.0,8.0)) * glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        LampPostUbo.mvpMat[0] = ViewPrj * LampPostUbo.mMat[0];
+        LampPostUbo.nMat[0] = glm::inverse(glm::transpose(LampPostUbo.mMat[0]));
+        LampPostUbo.mMat[1] = glm::translate(glm::mat4(1.0f), glm::vec3(3.0,0.0,18.0)) * glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        LampPostUbo.mvpMat[1] = ViewPrj * LampPostUbo.mMat[1];
+        LampPostUbo.nMat[1] = glm::inverse(glm::transpose(LampPostUbo.mMat[1]));
+        LampPostUbo.mMat[2] = glm::translate(glm::mat4(1.0f), glm::vec3(7.0,0.0,3.0)) * glm::rotate(glm::mat4(1.0f), glm::radians(-180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        LampPostUbo.mvpMat[2] = ViewPrj * LampPostUbo.mMat[2];
+        LampPostUbo.nMat[2] = glm::inverse(glm::transpose(LampPostUbo.mMat[2]));
+        LampPostUbo.mMat[3] = glm::translate(glm::mat4(1.0f), glm::vec3(17.0,0.0,3.0)) * glm::rotate(glm::mat4(1.0f), glm::radians(-180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        LampPostUbo.mvpMat[3] = ViewPrj * LampPostUbo.mMat[3];
+        LampPostUbo.nMat[3] = glm::inverse(glm::transpose(LampPostUbo.mMat[3]));
+        LampPostUbo.mMat[4] = glm::translate(glm::mat4(1.0f), glm::vec3(21.0,0.0,8.0)) * glm::rotate(glm::mat4(1.0f), glm::radians(-270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        LampPostUbo.mvpMat[4] = ViewPrj * LampPostUbo.mMat[4];
+        LampPostUbo.nMat[4] = glm::inverse(glm::transpose(LampPostUbo.mMat[4]));
+        LampPostUbo.mMat[5] = glm::translate(glm::mat4(1.0f), glm::vec3(21.0,0.0,18.0)) * glm::rotate(glm::mat4(1.0f), glm::radians(-270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        LampPostUbo.mvpMat[5] = ViewPrj * LampPostUbo.mMat[5];
+        LampPostUbo.nMat[5] = glm::inverse(glm::transpose(LampPostUbo.mMat[5]));
+        LampPostUbo.mMat[6] = glm::translate(glm::mat4(1.0f), glm::vec3(7.0,0.0,21.0));
+        LampPostUbo.mvpMat[6] = ViewPrj * LampPostUbo.mMat[6];
+        LampPostUbo.nMat[6] = glm::inverse(glm::transpose(LampPostUbo.mMat[6]));
+        LampPostUbo.mMat[7] = glm::translate(glm::mat4(1.0f), glm::vec3(17.0,0.0,21.0));
+        LampPostUbo.mvpMat[7] = ViewPrj * LampPostUbo.mMat[7];
+        LampPostUbo.nMat[7] = glm::inverse(glm::transpose(LampPostUbo.mMat[7]));
+         */
+
+        float SkyBox_scale_factor = 98.0f;
+
+// Traslazione verso l'origine per centrare la SkyBox
+        glm::vec3 skybox_center_offset = glm::vec3(0, 3, -5); // Sostituisci con i valori corretti per centrare la SkyBox
+
+        SkyBoxUbo.mvpMat = M * glm::mat4(glm::mat3(ViewMatrix))
+                           * glm::translate(glm::mat4(1.0f), skybox_center_offset) // Traslazione
+                           * glm::scale(glm::mat4(1.0f), glm::vec3(SkyBox_scale_factor, SkyBox_scale_factor, SkyBox_scale_factor)); // Scala
+
         // These informations should be used to fill the Uniform Buffer Object in Binding 0 of your DSL
         DSScooter.map(currentImage, &ScooterUbo, 0);
 
         DSCity.map(currentImage, &CityUbo, 0);
+
+        DSSkyScraper.map(currentImage, &SkyScraperUbo, 0);
+
+        DSLampPost.map(currentImage, &LampPostUbo, 0);
+
+        DSskyBox.map(currentImage, &SkyBoxUbo, 0);
 
         // The specular power of the uniform buffer containing the material parameters of the new object should be set to:
         // XXX.Power = 200.0
@@ -620,6 +880,10 @@ protected:
 
         CityParUbo.Pow = 200.0f;
 
+        SkyScraperParUbo.Pow = 200.0f;
+
+        LampPostParUbo.Pow = 200.0f;
+
         // The textre angle parameter of the uniform buffer containing the material parameters of the new object shoud be set to: tTime * TangTurnTimeFact
         // XXX.Ang = tTime * TangTurnTimeFact;
         // Where you replace XXX.Ang with the local field of the variable corresponding to the uniform buffer object
@@ -627,10 +891,18 @@ protected:
 
         CityParUbo.Ang = 0.0f;
 
+        SkyScraperParUbo.Ang = 0.0f;
+
+        LampPostParUbo.Ang = 0.0f;
+
         // These informations should be used to fill the Uniform Buffer Object in Binding 6 of your DSL
         DSScooter.map(currentImage, &ScooterParUbo, 7);
 
         DSCity.map(currentImage, &CityParUbo, 2);
+
+        DSSkyScraper.map(currentImage, &SkyScraperParUbo, 2);
+
+        DSLampPost.map(currentImage, &LampPostParUbo, 2);
 
     }
 
