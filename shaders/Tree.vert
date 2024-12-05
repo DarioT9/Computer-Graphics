@@ -18,11 +18,11 @@ layout(location = 3) out vec4 fragTan;
 
 // Here the Uniform buffers are defined. In this case, the Transform matrices (Set 1, binding 0)
 // are used. Note that the definition must match the one used in the CPP code
-const int NSKYSCRAPER=16;
+const int NTREE=64;
 layout(set = 1, binding = 0) uniform UniformBufferObject {
-	mat4 mvpMat[NSKYSCRAPER];
-	mat4 mMat[NSKYSCRAPER];
-	mat4 nMat[NSKYSCRAPER];
+	mat4 mvpMat[NTREE];
+	mat4 mMat[NTREE];
+	mat4 nMat[NTREE];
 } ubo;
 
 // Here the shader simply computes clipping coordinates, and passes to the Fragment Shader
