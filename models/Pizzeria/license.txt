@@ -1,0 +1,11 @@
+Model Information:
+* title:	Pizzeria
+* source:	https://sketchfab.com/3d-models/pizzeria-e6d19e6a021f42ab905225c3e5af866b
+* author:	simonecazzaniga (https://sketchfab.com/simonecazzaniga)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Pizzeria" (https://sketchfab.com/3d-models/pizzeria-e6d19e6a021f42ab905225c3e5af866b) by simonecazzaniga (https://sketchfab.com/simonecazzaniga) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

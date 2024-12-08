@@ -44,8 +44,14 @@ struct CityMatricesUniformBufferObject {
     alignas(16) glm::mat4 nMat;    // Normal matrix
 };
 
+struct PizzeriaMatricesUniformBufferObject {
+    alignas(16) glm::mat4 mvpMat;  // Model-View-Projection matrix
+    alignas(16) glm::mat4 mMat;    // Model matrix
+    alignas(16) glm::mat4 nMat;    // Normal matrix
+};
+
 #define NSKYSCRAPER 16
-int indicesSkyScraper1[NSKYSCRAPER] = {3, 15, 8, 30, 12, 5, 26, 1, 9, 16, 22, 28, 37, 40, 49, 61};
+int indicesSkyScraper1[NSKYSCRAPER] = {3, 15, 8, 30, 12, 5, 26, 1, 9, 16, 22, 37, 40, 49, 61};
 int indicesSkyScraper2[NSKYSCRAPER] = {2, 6, 10, 18, 20, 25, 33, 41, 45, 50, 52, 53, 54, 56, 58, 60};
 int indicesSkyScraper3[NSKYSCRAPER] = {4, 7, 11, 14, 19, 21, 23, 29, 31, 32, 34, 39, 42, 44, 47, 48};
 int indicesSkyScraper4[NSKYSCRAPER] = {0, 9, 13, 17, 24, 27, 35, 36, 38, 43, 46, 51, 55, 57, 59, 62};
@@ -135,6 +141,11 @@ struct CityParametersUniformBufferObject {
     alignas(4) float Ang;  // Parametro per eventuali trasformazioni basate sul tempo (opzionale)
 };
 
+struct PizzeriaParametersUniformBufferObject {
+    alignas(4) float Pow;  // Parametro di potenza speculare, simile a quello dello scooter
+    alignas(4) float Ang;  // Parametro per eventuali trasformazioni basate sul tempo (opzionale)
+};
+
 struct SkyScraper1ParametersUniformBufferObject {
     alignas(4) float Pow;  // Parametro di potenza speculare, simile a quello dello scooter
     alignas(4) float Ang;  // Parametro per eventuali trasformazioni basate sul tempo (opzionale)
@@ -197,6 +208,13 @@ struct ScooterFWheelVertex {
 };
 
 struct CityVertex {
+    glm::vec3 pos;   // Posizione del vertex
+    glm::vec3 norm;  // Normale del vertex
+    glm::vec2 UV;    // Coordinate UV per la texture
+    glm::vec4 tan;   // Tangente per il normal mapping (opzionale, se il modello lo richiede)
+};
+
+struct PizzeriaVertex {
     glm::vec3 pos;   // Posizione del vertex
     glm::vec3 norm;  // Normale del vertex
     glm::vec2 UV;    // Coordinate UV per la texture
@@ -338,6 +356,7 @@ protected:
     DescriptorSetLayout DSLScooter;
     DescriptorSetLayout DSLScooterFWheel;
     DescriptorSetLayout DSLCity;
+    DescriptorSetLayout DSLPizzeria;
     DescriptorSetLayout DSLSkyScraper1;
     DescriptorSetLayout DSLSkyScraper2;
     DescriptorSetLayout DSLSkyScraper3;
@@ -355,6 +374,7 @@ protected:
     VertexDescriptor VDScooter;
     VertexDescriptor VDScooterFWheel;
     VertexDescriptor VDCity;
+    VertexDescriptor VDPizzeria;
     VertexDescriptor VDSkyScraper1;
     VertexDescriptor VDSkyScraper2;
     VertexDescriptor VDSkyScraper3;
@@ -371,6 +391,7 @@ protected:
     Pipeline PScooter;
     Pipeline PScooterFWheel;
     Pipeline PCity;
+    Pipeline PPizzeria;
     Pipeline PSkyScraper1;
     Pipeline PSkyScraper2;
     Pipeline PSkyScraper3;
@@ -395,6 +416,7 @@ protected:
     Model MScooter;
     Model MFWheel;
     Model MCity;
+    Model MPizzeria;
     Model MSkyScraper1;
     Model MSkyScraper2;
     Model MSkyScraper3;
@@ -409,6 +431,7 @@ protected:
 
     Texture TScooterBaseColor, TScooterNormal, TScooterHeight, TScooterMetallic, TScooterRoughness, TScooterAmbientOcclusion;
     Texture TCity;
+    Texture TPizzeria;
     Texture TSkyScraper1;
     Texture TSkyScraper2;
     Texture TSkyScraper3;
@@ -424,6 +447,7 @@ protected:
     DescriptorSet DSScooter;
     DescriptorSet DSScooterFWheel;
     DescriptorSet DSCity;
+    DescriptorSet DSPizzeria;
     DescriptorSet DSSkyScraper1;
     DescriptorSet DSSkyScraper2;
     DescriptorSet DSSkyScraper3;
@@ -500,6 +524,11 @@ protected:
                 {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1},  // Texture Base Color
                 {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(CityParametersUniformBufferObject), 1},
         });
+        DSLPizzeria.init(this, {
+                {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(PizzeriaMatricesUniformBufferObject), 1},  // Matrice uniforme del modello scooter
+                {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1},  // Texture Base Color
+                {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(PizzeriaParametersUniformBufferObject), 1},
+        });
         DSLSkyScraper1.init(this, {
                 {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(SkyScraper1MatricesUniformBufferObject), 1},  // Matrice uniforme del modello scooter
                 {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1},  // Texture
@@ -573,6 +602,15 @@ protected:
                             {0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(CityVertex, norm), sizeof(glm::vec3), NORMAL},    // Normale (3 componenti float)
                             {0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(CityVertex, UV), sizeof(glm::vec2), UV},             // UV (2 componenti float)
                             {0, 3, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(CityVertex, tan), sizeof(glm::vec4), TANGENT}  // Tangente (4 componenti float)
+                    });
+        VDPizzeria.init(this, {
+                {0, sizeof(CityVertex), VK_VERTEX_INPUT_RATE_VERTEX}  // Descrive la dimensione del vertice e la frequenza di input
+        }, {
+                            // Descrizione degli attributi dei vertici
+                            {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(PizzeriaVertex, pos), sizeof(glm::vec3), POSITION},  // Posizione (3 componenti float)
+                            {0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(PizzeriaVertex, norm), sizeof(glm::vec3), NORMAL},    // Normale (3 componenti float)
+                            {0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(PizzeriaVertex, UV), sizeof(glm::vec2), UV},             // UV (2 componenti float)
+                            {0, 3, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(PizzeriaVertex, tan), sizeof(glm::vec4), TANGENT}  // Tangente (4 componenti float)
                     });
         VDSkyScraper1.init(this, {
                 {0, sizeof(SkyScraper1Vertex), VK_VERTEX_INPUT_RATE_VERTEX}  // Descrive la dimensione del vertice e la frequenza di input
@@ -675,6 +713,7 @@ protected:
 //		And should receive two DescriptorSetLayout, the first should be DSLGlobal, while the other must be the one you defined
         PScooter.init(this, &VDScooter, "shaders/NormalMapVert.spv", "shaders/NormalMapFrag.spv", {&DSLGlobal, &DSLScooter});
         PCity.init(this, &VDCity, "shaders/NormalMapVert.spv", "shaders/CityFrag.spv", {&DSLGlobal, &DSLCity});
+        PPizzeria.init(this, &VDPizzeria, "shaders/NormalMapVert.spv", "shaders/PizzeriaFrag.spv", {&DSLGlobal, &DSLPizzeria});
         PSkyScraper1.init(this, &VDSkyScraper1, "shaders/SkyScraperVert.spv", "shaders/SkyScraperFrag.spv", {&DSLGlobal, &DSLSkyScraper1});
         PSkyScraper2.init(this, &VDSkyScraper2, "shaders/SkyScraperVert.spv", "shaders/SkyScraperFrag.spv", {&DSLGlobal, &DSLSkyScraper2});
         PSkyScraper3.init(this, &VDSkyScraper3, "shaders/SkyScraperVert.spv", "shaders/SkyScraperFrag.spv", {&DSLGlobal, &DSLSkyScraper3});
@@ -693,6 +732,7 @@ protected:
 //		Vertex descriptor you defined, and be of GLTF format.
         MScooter.init(this, &VDScooter, "models/Scooter.obj", OBJ);
         MCity.init(this, &VDCity, "models/road.obj", OBJ);
+        MPizzeria.init(this, &VDPizzeria, "models/Pizzeria/pizzeria.obj", OBJ);
         MSkyScraper1.init(this, &VDSkyScraper1, "models/apartment_1.mgcg", MGCG);
         MSkyScraper2.init(this, &VDSkyScraper2, "models/apartment_2.mgcg", MGCG);
         MSkyScraper3.init(this, &VDSkyScraper3, "models/apartment_3.mgcg", MGCG);
@@ -725,6 +765,8 @@ protected:
 
         TCity.init(this, "textures/city/road.png");
 
+        TPizzeria.init(this, "textures/pizzeria/TPizzeria.jpeg");
+
         TSkyScraper1.init(this, "textures/Textures_Skyscrapers.png");
         TSkyScraper2.init(this, "textures/Textures_Skyscrapers.png");
         TSkyScraper3.init(this, "textures/Textures_Skyscrapers.png");
@@ -745,9 +787,9 @@ protected:
         // WARNING!!!!!!!!
         // Must be set before initializing the text and the scene
 // **A10** Update the number of elements to correctly size the descriptor sets pool
-        DPSZs.uniformBlocksInPool = 1 + 2 + 2 + 8 + 8 + 2 + 1 + 1; // ScooterMatrixUniformBufferObject and ScooterShaderParameterdsUniformBufferObject, same for City, same for the four SkyScrapers, same for the four trees, same for LampPost, 1 for SkyBox, 1 for sun
-        DPSZs.texturesInPool = 6 + 1 + 4 + 4 + 1 + 1 + 1; // Textures (TScooterBaseColor, TScooterNormal, TScooterHeight, TScooterMetallic, TScooterRoughness, TScooterAmbientOcclusion) + 1 for city + 4 for the skyscrapers + 4 for the trees + 1 for LampPost + 1 for Skybox + 1 for sun
-        DPSZs.setsInPool = 1 + 1 + 4 + 4 + 1 + 1 + 1 + 1; // DSScooter and DSCity and the four DS for SkyScrapers and the four DS for Trees and DSLampPost and DSSkyBox and DSSun
+        DPSZs.uniformBlocksInPool = 1 + 2 + 2 + 2 + 8 + 8 + 2 + 1 + 1; // ScooterMatrixUniformBufferObject and ScooterShaderParameterdsUniformBufferObject, same for City, same for Pizzeria, same for the four SkyScrapers, same for the four trees, same for LampPost, 1 for SkyBox, 1 for sun
+        DPSZs.texturesInPool = 6 + 1 + 1 + 4 + 4 + 1 + 1 + 1; // Textures (TScooterBaseColor, TScooterNormal, TScooterHeight, TScooterMetallic, TScooterRoughness, TScooterAmbientOcclusion) + 1 for city + 1 for pizzeria + 4 for the skyscrapers + 4 for the trees + 1 for LampPost + 1 for Skybox + 1 for sun
+        DPSZs.setsInPool = 1 + 1 + 1 + 4 + 4 + 1 + 1 + 1 + 1; // DSScooter and DSCity and DSPizzeria and the four DS for SkyScrapers and the four DS for Trees and DSLampPost and DSSkyBox and DSSun
 
         std::cout << "Initialization completed!\n";
         std::cout << "Uniform Blocks in the Pool  : " << DPSZs.uniformBlocksInPool << "\n";
@@ -764,6 +806,7 @@ protected:
 // **A10** Add the pipeline creation
         PScooter.create();
         PCity.create();
+        PPizzeria.create();
         PSkyScraper1.create();
         PSkyScraper2.create();
         PSkyScraper3.create();
@@ -781,6 +824,7 @@ protected:
 //        Texture TScooterAmbientOcclusion, TScooterBaseColor, TScooterNormal, TScooterHeight, TScooterMetallic, TScooterRoughness;
         DSScooter.init(this,&DSLScooter,{&TScooterBaseColor, &TScooterNormal, &TScooterHeight, &TScooterMetallic, &TScooterRoughness, &TScooterAmbientOcclusion});
         DSCity.init(this,&DSLCity,{&TCity});
+        DSPizzeria.init(this,&DSLPizzeria,{&TPizzeria});
         DSSkyScraper1.init(this,&DSLSkyScraper1,{&TSkyScraper1});
         DSSkyScraper2.init(this,&DSLSkyScraper2,{&TSkyScraper2});
         DSSkyScraper3.init(this,&DSLSkyScraper3,{&TSkyScraper3});
@@ -802,6 +846,7 @@ protected:
 // **A10** Add the pipeline cleanup
         PScooter.cleanup();
         PCity.cleanup();
+        PPizzeria.cleanup();
         PSkyScraper1.cleanup();
         PSkyScraper2.cleanup();
         PSkyScraper3.cleanup();
@@ -819,6 +864,7 @@ protected:
 // **A10** Add the descriptor set cleanup
         DSScooter.cleanup();
         DSCity.cleanup();
+        DSPizzeria.cleanup();
         DSSkyScraper1.cleanup();
         DSSkyScraper2.cleanup();
         DSSkyScraper3.cleanup();
@@ -849,6 +895,9 @@ protected:
 
         TCity.cleanup();
         MCity.cleanup();
+
+        TPizzeria.cleanup();
+        MPizzeria.cleanup();
 
         TSkyScraper1.cleanup();
         MSkyScraper1.cleanup();
@@ -882,6 +931,7 @@ protected:
 // **A10** Add the cleanup for the descriptor set layout
         DSLScooter.cleanup();
         DSLCity.cleanup();
+        DSLPizzeria.cleanup();
         DSLSkyScraper1.cleanup();
         DSLSkyScraper2.cleanup();
         DSLSkyScraper3.cleanup();
@@ -897,6 +947,7 @@ protected:
 // **A10** Add the cleanup for the pipeline
         PScooter.destroy();
         PCity.destroy();
+        PPizzeria.destroy();
         PSkyScraper1.destroy();
         PSkyScraper2.destroy();
         PSkyScraper3.destroy();
@@ -1066,6 +1117,17 @@ protected:
         vkCmdDrawIndexed(commandBuffer,
                          static_cast<uint32_t>(Msun.indices.size()), 1, 0, 0, 0);
 
+// 14. Binding del pipeline e del modello per la pizzeria
+        PPizzeria.bind(commandBuffer);                // Pipeline per la città
+        MPizzeria.bind(commandBuffer);                // Modello della città
+
+// Binding dei descriptor set globali e quelli specifici della città
+        DSGlobal.bind(commandBuffer, PPizzeria, 0, currentImage);    // Descriptor Set globale per la città
+        DSPizzeria.bind(commandBuffer, PPizzeria, 1, currentImage);      // Descriptor Set per la città
+
+// Comando di disegno per la città
+        vkCmdDrawIndexed(commandBuffer,
+                         static_cast<uint32_t>(MPizzeria.indices.size()), 1, 0, 0, 0);
     }
 
 
@@ -1257,6 +1319,7 @@ protected:
 
         EmissionUniformBufferObject emissionUbo{};
         emissionUbo.mvpMat = ViewPrj * glm::translate(glm::mat4(1), gubo.lightDir * 90.0f) * baseTr;
+        emissionUbo.mvpMat = glm::scale(emissionUbo.mvpMat, glm::vec3(3.0f, 3.0f, 3.0f));
         DSsun.map(currentImage, &emissionUbo, 0);
 
 // **A10** Add to compute the uniforms and pass them to the shaders. You need two uniforms: one for the matrices, and the other for the material parameters.
@@ -1265,6 +1328,9 @@ protected:
 
         CityMatricesUniformBufferObject CityUbo{};
         CityParametersUniformBufferObject CityParUbo{};
+
+        PizzeriaMatricesUniformBufferObject PizzeriaUbo{};
+        PizzeriaParametersUniformBufferObject PizzeriaParUbo{};
 
         SkyScraper1MatricesUniformBufferObject SkyScraper1Ubo{};
         SkyScraper1ParametersUniformBufferObject SkyScraper1ParUbo{};
@@ -1305,6 +1371,22 @@ protected:
         CityUbo.nMat = glm::mat4(1.0f);
         CityUbo.mvpMat = ViewPrj;
 
+
+        // Aggiorna la matrice del modello per la pizzeria con fattore di scala 1.8 e rotazione di 45 gradi
+        PizzeriaUbo.mMat = glm::translate(glm::mat4(1.0f),
+                                          glm::vec3(84.0 - (24.0 * (28 % 8)), 0.0, 84 - (24 * (28 / 8))));
+        PizzeriaUbo.mMat = glm::rotate(PizzeriaUbo.mMat, glm::radians(-45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        PizzeriaUbo.mMat = glm::scale(PizzeriaUbo.mMat, glm::vec3(1.8f, 1.8f, 1.8f));
+
+        // Calcola la matrice MVP per la pizzeria
+        PizzeriaUbo.mvpMat = ViewPrj * PizzeriaUbo.mMat;
+
+        // Calcola la matrice normale per la pizzeria
+        PizzeriaUbo.nMat = glm::inverse(glm::transpose(PizzeriaUbo.mMat));
+
+
+
+
         int currentIndex = -1;
         int counterSkyScraper1 = 0;
         int counterSkyScraper2 = 0;
@@ -1330,6 +1412,12 @@ protected:
                 {
                     currentIndex = 4;
                 }
+            }
+
+            // If the tile is the one of the pizzeria
+            if(i == 28)
+            {
+                currentIndex = -1;
             }
 
             if(currentIndex == 1) {
@@ -1453,6 +1541,11 @@ protected:
                 }
             }
 
+            if(i == 28)
+            {
+                currentIndex = -1;
+            }
+
             if(currentIndex == 1) {
                 Tree1Ubo.mMat[counterTree1 * 4] = glm::translate(glm::mat4(1.0f), glm::vec3(75 - (24 * ((i) % 8)), 0.0, 85 - offset - (24 * ((i) / 8))));
                 Tree1Ubo.mMat[counterTree1 * 4] = glm::scale(Tree1Ubo.mMat[counterTree1 * 4], glm::vec3(0.5f, 0.5f, 0.5f));
@@ -1558,6 +1651,8 @@ protected:
 
         DSCity.map(currentImage, &CityUbo, 0);
 
+        DSPizzeria.map(currentImage, &PizzeriaUbo, 0);
+
         DSSkyScraper1.map(currentImage, &SkyScraper1Ubo, 0);
 
         DSSkyScraper2.map(currentImage, &SkyScraper2Ubo, 0);
@@ -1585,6 +1680,8 @@ protected:
 
         CityParUbo.Pow = 200.0f;
 
+        PizzeriaParUbo.Pow = 200.0f;
+
         SkyScraper1ParUbo.Pow = 200.0f;
         SkyScraper2ParUbo.Pow = 200.0f;
         SkyScraper3ParUbo.Pow = 200.0f;
@@ -1604,6 +1701,8 @@ protected:
 
         CityParUbo.Ang = 0.0f;
 
+        PizzeriaParUbo.Ang = 0.0f;
+
         SkyScraper1ParUbo.Ang = 0.0f;
         SkyScraper2ParUbo.Ang = 0.0f;
         SkyScraper3ParUbo.Ang = 0.0f;
@@ -1620,6 +1719,8 @@ protected:
         DSScooter.map(currentImage, &ScooterParUbo, 7);
 
         DSCity.map(currentImage, &CityParUbo, 2);
+
+        DSPizzeria.map(currentImage, &PizzeriaParUbo, 2);
 
         DSSkyScraper1.map(currentImage, &SkyScraper1ParUbo, 2);
         DSSkyScraper2.map(currentImage, &SkyScraper2ParUbo, 2);
