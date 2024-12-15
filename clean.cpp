@@ -4,7 +4,17 @@
 #include "modules/Starter.hpp"
 #include "WVP.hpp"
 
+#include "modules/TextMaker.hpp"
+
+#include <thread>
+#include <chrono>
+
 #define PI 3.14159265359
+
+
+TextMaker txt;
+
+std::vector<SingleText> outText = {{2, {"test", "", "", ""}, 0, 0}};
 
 struct BoundingBox {
     glm::vec2 min;
@@ -796,6 +806,7 @@ protected:
         std::cout << "Textures in the Pool        : " << DPSZs.texturesInPool << "\n";
         std::cout << "Descriptor Sets in the Pool : " << DPSZs.setsInPool << "\n";
 
+
         ViewMatrix = glm::translate(glm::mat4(1), -CamPos);
 
         ScooterPos = glm::vec3(0.0f, 0.0f, 0.0f);  // Imposta la posizione iniziale dello scooter
@@ -838,6 +849,8 @@ protected:
         DSsun.init(this, &DSLEmission, {&Tsun});
 
         DSGlobal.init(this, &DSLGlobal, {});
+
+        
     }
 
     // Here you destroy your pipelines and Descriptor Sets!
@@ -876,6 +889,7 @@ protected:
         DSLampPost.cleanup();
         DSskyBox.cleanup();
         DSsun.cleanup();
+        
     }
 
     // Here you destroy all the Models, Texture and Desc. Set Layouts you created!
@@ -944,6 +958,8 @@ protected:
         DSLskyBox.cleanup();
         DSLEmission.cleanup();
 
+        			
+
 // **A10** Add the cleanup for the pipeline
         PScooter.destroy();
         PCity.destroy();
@@ -993,6 +1009,8 @@ protected:
 // Comando di disegno per la città
         vkCmdDrawIndexed(commandBuffer,
                          static_cast<uint32_t>(MCity.indices.size()), 1, 0, 0, 0);
+
+                         
 
 // 3. Binding del pipeline e del modello per lo SkyScraper1
         PSkyScraper1.bind(commandBuffer);                // Pipeline per la città
@@ -1172,11 +1190,11 @@ protected:
         glm::vec3 proposedPos = ScooterPos;
 
         glm::mat4 M;
-
+        
 
         //Velocity and steering equations
-        const float STEERING_SPEED = glm::radians(60.0f);
-		const float ROT_SPEED = glm::radians(120.0f);
+        const float STEERING_SPEED = glm::radians(80.0f);
+		const float ROT_SPEED = glm::radians(140.0f);
 		const float MOVE_SPEED = 10.0f;
 
 		SteeringAng += -m.x * STEERING_SPEED * deltaT;
@@ -1208,7 +1226,10 @@ protected:
 				proposedPos.x = proposedPos.x - sin(Yaw) * dampedVel;
 				proposedPos.z = proposedPos.z - cos(Yaw) * dampedVel;
 			}
-			if(m.x == 0) {
+			
+
+        }
+        if(m.x == 0) {
 				if(SteeringAng > STEERING_SPEED * deltaT) {
 					SteeringAng -= STEERING_SPEED * deltaT;
 				} else if(SteeringAng < -STEERING_SPEED * deltaT) {
@@ -1217,9 +1238,6 @@ protected:
 					SteeringAng = 0.0f;
 				}					
 			}
-
-        }
-
 /*
         if (proposedPos != ScooterPos) {
             print = true;
@@ -1282,19 +1300,9 @@ protected:
 						 dampedCamPos * exp(-lambdaCam * deltaT); 
 			M = MakeViewProjectionLookAt(dampedCamPos, CamTarget, glm::vec3(0,1,0), CamRoll, glm::radians(90.0f), Ar, 0.1f, 500.0f);
             Mv = ViewMatrix;
-		}else if(currScene == 1){ //Isometric camera
-            M = glm::mat4(1.0f / 10.0f, 0, 0, 0,
-                  0, -4.0f / 30.0f, 0, 0,
-                  0, 0, 1.0f/(-500.0f-500.0f), 0,
-                  0, 0, -500.0f/(-500.0f-500.0f), 1)*
-                glm::mat4(1, 0, 0, 0,
-                  0, glm::cos(glm::radians(-35.26f)), -glm::sin(glm::radians(-35.26f)), 0,
-                  0, glm::sin(glm::radians(-35.26f)), glm::cos(glm::radians(-35.26f)), 0,
-                  0, 0, 0, 1) *
-                glm::mat4(glm::cos(glm::radians(-45.0f)), 0, -glm::sin(glm::radians(-45.0f)), 0,
-                  0, 1, 0, 0,
-                  glm::sin(glm::radians(-45.0f)), 0, glm::cos(glm::radians(-45.0f)), 0,
-                  0, 0, 0, 1);
+		}else if(currScene == 1){ //Orthogonal camera
+            
+	        M = glm::rotate(glm::mat4(1.0f / 15.0f,0,0,0,  0,-4.0f / 45.f,0,0,   0,0,1.0f/(-500.0f-500.0f),0, 0,0,-500.0f/(-500.0f-500.0f),1), glm::radians(90.0f), glm::vec3(1,0,0));
             Mv =  glm::inverse(
 							glm::translate(glm::mat4(1), ScooterPos) *
 							glm::rotate(glm::mat4(1), DlookAng, glm::vec3(0,1,0))
