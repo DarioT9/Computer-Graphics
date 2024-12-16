@@ -1080,7 +1080,7 @@ protected:
         DSGlobal.map(currentImage, &gubo, 0); // Maps the global uniform buffer object
 
         EmissionUniformBufferObject emissionUbo{};
-        emissionUbo.mvpMat = ViewPrj * glm::translate(glm::mat4(1), gubo.lightDir * 90.0f) * baseTr; // Calculates emission matrix
+        emissionUbo.mvpMat = ViewPrj * glm::translate(glm::mat4(1), gubo.lightDir * 140.0f) * baseTr; // Calculates emission matrix
         emissionUbo.mvpMat = glm::scale(emissionUbo.mvpMat, glm::vec3(3.0f, 3.0f, 3.0f)); // Scales the emission matrix
         DSsun.map(currentImage, &emissionUbo, 0); // Maps the emission uniform buffer object
 
@@ -1117,9 +1117,9 @@ protected:
         CityUbo.nMat = glm::mat4(1.0f); // Sets identity normal matrix for the city
         CityUbo.mvpMat = ViewPrj; // Sets MVP matrix for the city
 
-        SoilUbo.mMat = glm::mat4(1.0f); // Sets identity matrix for the soil
+        SoilUbo.mMat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.001f, 0.0f)); // Applies a slight downward translation
         SoilUbo.nMat = glm::mat4(1.0f); // Sets identity normal matrix for the soil
-        SoilUbo.mvpMat = ViewPrj; // Sets MVP matrix for the soil
+        SoilUbo.mvpMat = ViewPrj * SoilUbo.mMat; // Updates MVP matrix with the transformation
 
         // Updates the model matrix for the pizzeria with a scaling factor of 1.8 and a rotation of 45 degrees
         PizzeriaUbo.mMat = glm::translate(glm::mat4(1.0f),
