@@ -200,6 +200,7 @@ protected:
     DescriptorSetLayout DSLScooter;    // Descriptor layout for the Scooter object
     DescriptorSetLayout DSLScooterFWheel; // Descriptor layout for the Scooter front wheel
     DescriptorSetLayout DSLCity;        // Descriptor layout for the City model
+    DescriptorSetLayout DSLSoil;        // Descriptor layout for the Soil model
     DescriptorSetLayout DSLPizzeria;    // Descriptor layout for the Pizzeria model
     DescriptorSetLayout DSLSkyScraper[4]; // Descriptor layouts for the 4 skyscrapers
     DescriptorSetLayout DSLTree[4];     // Descriptor layouts for the 4 trees
@@ -211,6 +212,7 @@ protected:
     VertexDescriptor VDScooter;         // Vertex descriptor for the Scooter model
     VertexDescriptor VDScooterFWheel;   // Vertex descriptor for the Scooter front wheel
     VertexDescriptor VDCity;            // Vertex descriptor for the City model
+    VertexDescriptor VDSoil;            // Vertex descriptor for the Soil model
     VertexDescriptor VDPizzeria;        // Vertex descriptor for the Pizzeria model
     VertexDescriptor VDSkyScraper[4];   // Vertex descriptors for the 4 skyscrapers
     VertexDescriptor VDTree[4];         // Vertex descriptors for the 4 trees
@@ -222,6 +224,7 @@ protected:
     Pipeline PScooter;                  // Pipeline for rendering the Scooter
     Pipeline PScooterFWheel;            // Pipeline for rendering the Scooter front wheel
     Pipeline PCity;                     // Pipeline for rendering the City
+    Pipeline PSoil;                     // Pipeline for rendering the Soil
     Pipeline PPizzeria;                 // Pipeline for rendering the Pizzeria
     Pipeline PSkyScraper[4];            // Pipelines for rendering the 4 skyscrapers
     Pipeline PTree[4];                  // Pipelines for rendering the 4 trees
@@ -236,6 +239,7 @@ protected:
     Model MScooter;                     // Model for the Scooter
     Model MFWheel;                      // Model for the Scooter's front wheel
     Model MCity;                        // Model for the City
+    Model MSoil;                        // Model for the Soil
     Model MPizzeria;                    // Model for the Pizzeria
     Model MSkyScraper[4];               // Models for the 4 skyscrapers
     Model MTree[4];                     // Models for the 4 trees
@@ -246,6 +250,7 @@ protected:
     // Textures for the various objects in the scene
     Texture TScooterBaseColor, TScooterNormal, TScooterHeight, TScooterMetallic, TScooterRoughness, TScooterAmbientOcclusion; // Textures for the Scooter
     Texture TCity;                      // Texture for the City
+    Texture TSoil;                      // Texture for the Soil
     Texture TPizzeria;                  // Texture for the Pizzeria
     Texture TSkyScraper[4];             // Textures for the 4 skyscrapers
     Texture TTree[4];                   // Textures for the 4 trees
@@ -257,6 +262,7 @@ protected:
     DescriptorSet DSScooter;            // Descriptor set for the Scooter
     DescriptorSet DSScooterFWheel;      // Descriptor set for the Scooter front wheel
     DescriptorSet DSCity;               // Descriptor set for the City
+    DescriptorSet DSSoil;               // Descriptor set for the Soil
     DescriptorSet DSPizzeria;           // Descriptor set for the Pizzeria
     DescriptorSet DSSkyScraper[4];      // Descriptor sets for the 4 skyscrapers
     DescriptorSet DSTree[4];            // Descriptor sets for the 4 trees
@@ -332,6 +338,13 @@ protected:
                 {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(ObjectParametersUniformBufferObject),     1},
         });
 
+        // Initialize the Descriptor Set Layout for the Soil model with uniform buffers and textures.
+        DSLSoil.init(this, {
+                {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         VK_SHADER_STAGE_VERTEX_BIT,   sizeof(SingleObjectMatricesUniformBufferObject), 1},  // Uniform matrix for the soil model
+                {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0,                                               1},  // Base Color Texture
+                {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(ObjectParametersUniformBufferObject),     1},
+        });
+
         // Initialize the Descriptor Set Layout for the Pizzeria model with uniform buffers and textures.
         DSLPizzeria.init(this, {
                 {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         VK_SHADER_STAGE_VERTEX_BIT,   sizeof(SingleObjectMatricesUniformBufferObject), 1},  // Uniform matrix for the pizzeria model
@@ -394,6 +407,22 @@ protected:
 
         // Initialize the Vertex Descriptor for the City model with vertex attributes and input rate.
         VDCity.init(this, {
+                {0, sizeof(ObjectVertex),
+                 VK_VERTEX_INPUT_RATE_VERTEX}  // Describes the size of the vertex and input rate
+        }, {
+                            // Describes the vertex attribute layout
+                            {0, 0, VK_FORMAT_R32G32B32_SFLOAT,    offsetof(ObjectVertex,
+                                                                           pos),                sizeof(glm::vec3), POSITION},  // Position (3 float components)
+                            {0, 1, VK_FORMAT_R32G32B32_SFLOAT,    offsetof(ObjectVertex,
+                                                                           norm),               sizeof(glm::vec3), NORMAL},    // Normal (3 float components)
+                            {0, 2, VK_FORMAT_R32G32_SFLOAT,       offsetof(ObjectVertex,
+                                                                           UV),                 sizeof(glm::vec2), UV},             // UV (2 float components)
+                            {0, 3, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(ObjectVertex,
+                                                                           tan),                sizeof(glm::vec4), TANGENT}  // Tangent (4 float components)
+                    });
+
+        // Initialize the Vertex Descriptor for the Soil model with vertex attributes and input rate.
+        VDSoil.init(this, {
                 {0, sizeof(ObjectVertex),
                  VK_VERTEX_INPUT_RATE_VERTEX}  // Describes the size of the vertex and input rate
         }, {
@@ -500,6 +529,7 @@ protected:
         PScooter.init(this, &VDScooter, "shaders/NormalMapVert.spv", "shaders/NormalMapFrag.spv",
                       {&DSLGlobal, &DSLScooter});
         PCity.init(this, &VDCity, "shaders/NormalMapVert.spv", "shaders/CityFrag.spv", {&DSLGlobal, &DSLCity});
+        PSoil.init(this, &VDSoil, "shaders/NormalMapVert.spv", "shaders/CityFrag.spv", {&DSLGlobal, &DSLSoil});
         PPizzeria.init(this, &VDPizzeria, "shaders/NormalMapVert.spv", "shaders/PizzeriaFrag.spv",
                        {&DSLGlobal, &DSLPizzeria});
         for (int i = 0; i < 4; i++) {
@@ -517,9 +547,10 @@ protected:
         PEmission.init(this, &VDEmission, "shaders/EmissionVert.spv", "shaders/EmissionFrag.spv", {&DSLEmission});
 
         // Load models from the specified paths. Each model is initialized with its respective VertexDescriptor and format.
-        // The models include different objects such as scooter, city, pizzeria, skyscrapers, trees, lamp post, and the skybox.
+        // The models include different objects such as scooter, city, soil, pizzeria, skyscrapers, trees, lamp post, and the skybox.
         MScooter.init(this, &VDScooter, "models/Scooter.obj", OBJ);
         MCity.init(this, &VDCity, "models/road.obj", OBJ);
+        MSoil.init(this, &VDSoil, "models/soil.obj", OBJ);
         MPizzeria.init(this, &VDPizzeria, "models/Pizzeria/pizzeria.obj", OBJ);
         const char *modelPaths[4] = {
                 "models/apartment_1.mgcg",
@@ -545,7 +576,7 @@ protected:
         Msun.init(this, &VDEmission, "models/Sphere.obj", OBJ);
 
         // Load textures for various objects. Each texture is initialized with the respective file path.
-        // This includes textures for the scooter, city, pizzeria, skyscrapers, trees, lamp post, skybox, and the sun.
+        // This includes textures for the scooter, city, soil, pizzeria, skyscrapers, trees, lamp post, skybox, and the sun.
         TScooterBaseColor.init(this, "textures/scooter/new/KR51BaseColor.png");
 
         // Normal map initialization with a special feature to support normal mapping.
@@ -560,6 +591,8 @@ protected:
         TScooterAmbientOcclusion.init(this, "textures/scooter/new/KR51AO.png");
 
         TCity.init(this, "textures/city/road.png");
+
+        TSoil.init(this, "textures/city/croppedSoil.jpg");
 
         TPizzeria.init(this, "textures/pizzeria/TPizzeria.jpeg");
 
@@ -578,11 +611,11 @@ protected:
 
         // Set up descriptor pool sizes based on the number of uniform blocks, textures, and descriptor sets required for the scene.
         DPSZs.uniformBlocksInPool =
-                1 + 2 + 2 + 2 + 8 + 8 + 2 + 1 + 1; // Total number of uniform blocks (for scooter, city, pizzeria, etc.)
+                1 + 2 + 2 + 2 + 2 + 8 + 8 + 2 + 1 + 1; // Total number of uniform blocks (for scooter, city, soil, pizzeria, etc.)
         DPSZs.texturesInPool =
-                6 + 1 + 1 + 4 + 4 + 1 + 1 + 1; // Total number of textures (for scooter, city, pizzeria, etc.)
-        DPSZs.setsInPool = 1 + 1 + 1 + 4 + 4 + 1 + 1 + 1 +
-                           1; // Total number of descriptor sets (for scooter, city, pizzeria, etc.)
+                6 + 1 + 1 + 1 + 4 + 4 + 1 + 1 + 1; // Total number of textures (for scooter, city, soil, pizzeria, etc.)
+        DPSZs.setsInPool = 1 + 1 + 1 + 1 + 4 + 4 + 1 + 1 + 1 +
+                           1; // Total number of descriptor sets (for scooter, city, soil, pizzeria, etc.)
 
         std::cout << "Initialization completed!\n";
         std::cout << "Uniform Blocks in the Pool  : " << DPSZs.uniformBlocksInPool << "\n";
@@ -598,9 +631,10 @@ protected:
 
     // Create pipelines and descriptor sets.
     void pipelinesAndDescriptorSetsInit() {
-        // Create the pipelines for each object type (scooter, city, pizzeria, etc.).
+        // Create the pipelines for each object type (scooter, city, soil, pizzeria, etc.).
         PScooter.create();
         PCity.create();
+        PSoil.create();
         PPizzeria.create();
         for (int i = 0; i < 4; i++) {
             PSkyScraper[i].create();
@@ -617,6 +651,7 @@ protected:
                        {&TScooterBaseColor, &TScooterNormal, &TScooterHeight, &TScooterMetallic, &TScooterRoughness,
                         &TScooterAmbientOcclusion});
         DSCity.init(this, &DSLCity, {&TCity});
+        DSSoil.init(this, &DSLSoil, {&TSoil});
         DSPizzeria.init(this, &DSLPizzeria, {&TPizzeria});
         for (int i = 0; i < 4; i++) {
             DSSkyScraper[i].init(this, &DSLSkyScraper[i], {&TSkyScraper[i]});
@@ -637,6 +672,7 @@ protected:
         // Clean up the pipeline objects for each entity.
         PScooter.cleanup();
         PCity.cleanup();
+        PSoil.cleanup();
         PPizzeria.cleanup();
         for(int i = 0; i < 4; i++)
         {
@@ -656,6 +692,7 @@ protected:
         // Clean up descriptor sets for each entity.
         DSScooter.cleanup();
         DSCity.cleanup();
+        DSSoil.cleanup();
         DSPizzeria.cleanup();
         for(int i = 0; i < 4; i++)
         {
@@ -686,6 +723,10 @@ protected:
         // Clean up model and texture resources for city.
         TCity.cleanup();
         MCity.cleanup();
+
+        // Clean up model and texture resources for soil.
+        TSoil.cleanup();
+        MSoil.cleanup();
 
         // Clean up model and texture resources for pizzeria.
         TPizzeria.cleanup();
@@ -723,6 +764,7 @@ protected:
         // Clean up descriptor set layouts for each entity.
         DSLScooter.cleanup();
         DSLCity.cleanup();
+        DSLSoil.cleanup();
         DSLPizzeria.cleanup();
         for(int i = 0; i < 4; i++)
         {
@@ -739,6 +781,7 @@ protected:
         // Clean up the pipelines by destroying them completely.
         PScooter.destroy();
         PCity.destroy();
+        PSoil.destroy();
         PPizzeria.destroy();
         for(int i = 0; i < 4; i++)
         {
@@ -780,6 +823,18 @@ protected:
         // Draw call for the city.
         vkCmdDrawIndexed(commandBuffer,
                          static_cast<uint32_t>(MCity.indices.size()), 1, 0, 0, 0);
+
+        // Binding the pipeline and model for the soil.
+        PSoil.bind(commandBuffer);                // Pipeline for the soil
+        MSoil.bind(commandBuffer);                // Model for the soil
+
+        // Binding global and specific descriptor sets for the soil.
+        DSGlobal.bind(commandBuffer, PSoil, 0, currentImage);    // Global Descriptor Set for the soil
+        DSSoil.bind(commandBuffer, PSoil, 1, currentImage);      // Specific Descriptor Set for the soil
+
+        // Draw call for the soil.
+        vkCmdDrawIndexed(commandBuffer,
+                         static_cast<uint32_t>(MSoil.indices.size()), 1, 0, 0, 0);
 
         for(int i = 0; i < 4; i++)
         {
@@ -1036,6 +1091,9 @@ protected:
         SingleObjectMatricesUniformBufferObject CityUbo{};
         ObjectParametersUniformBufferObject CityParUbo{};
 
+        SingleObjectMatricesUniformBufferObject SoilUbo{};
+        ObjectParametersUniformBufferObject SoilParUbo{};
+
         SingleObjectMatricesUniformBufferObject PizzeriaUbo{};
         ObjectParametersUniformBufferObject PizzeriaParUbo{};
 
@@ -1058,6 +1116,10 @@ protected:
         CityUbo.mMat = glm::mat4(1.0f); // Sets identity matrix for the city
         CityUbo.nMat = glm::mat4(1.0f); // Sets identity normal matrix for the city
         CityUbo.mvpMat = ViewPrj; // Sets MVP matrix for the city
+
+        SoilUbo.mMat = glm::mat4(1.0f); // Sets identity matrix for the soil
+        SoilUbo.nMat = glm::mat4(1.0f); // Sets identity normal matrix for the soil
+        SoilUbo.mvpMat = ViewPrj; // Sets MVP matrix for the soil
 
         // Updates the model matrix for the pizzeria with a scaling factor of 1.8 and a rotation of 45 degrees
         PizzeriaUbo.mMat = glm::translate(glm::mat4(1.0f),
@@ -1189,7 +1251,8 @@ protected:
         }
 
         // Sets the scale factor for the SkyBox and adjusts its translation to center it in the scene
-        float SkyBox_scale_factor = 98.0f;
+//        float SkyBox_scale_factor = 98.0f;
+        float SkyBox_scale_factor = 200.0f;
         glm::vec3 skybox_center_offset = glm::vec3(0, 3, -5); // Adjust the translation values to center the SkyBox
 
         // Sets up the model-view-projection matrix for the SkyBox with scaling and translation
@@ -1200,6 +1263,7 @@ protected:
         // Maps the Uniform Buffer Objects (UBOs) for each object to the corresponding DSL bindings
         DSScooter.map(currentImage, &ScooterUbo, 0);
         DSCity.map(currentImage, &CityUbo, 0);
+        DSSoil.map(currentImage, &SoilUbo, 0);
         DSPizzeria.map(currentImage, &PizzeriaUbo, 0);
 
         // Maps the UBOs for the skyscrapers
@@ -1221,6 +1285,7 @@ protected:
         // Sets the specular power for each material's uniform buffer object
         ScooterParUbo.Pow = 200.0f;
         CityParUbo.Pow = 200.0f;
+        SoilParUbo.Pow = 200.0f;
         PizzeriaParUbo.Pow = 200.0f;
         for (int i = 0; i < 4; ++i) {
             skyScraperParamUbos[i].Pow = 200.0f;
@@ -1233,6 +1298,7 @@ protected:
         // Sets the texture angle parameter for each object based on time
         ScooterParUbo.Ang = 0.0f;
         CityParUbo.Ang = 0.0f;
+        SoilParUbo.Ang = 0.0f;
         PizzeriaParUbo.Ang = 0.0f;
         for (int i = 0; i < 4; ++i) {
             skyScraperParamUbos[i].Ang = 0.0f;
@@ -1245,6 +1311,7 @@ protected:
         // Maps the material parameter UBOs for each object to the corresponding DSL bindings
         DSScooter.map(currentImage, &ScooterParUbo, 7);
         DSCity.map(currentImage, &CityParUbo, 2);
+        DSSoil.map(currentImage, &SoilParUbo, 2);
         DSPizzeria.map(currentImage, &PizzeriaParUbo, 2);
 
         // Maps the material parameter UBOs for the skyscrapers
