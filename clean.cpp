@@ -35,29 +35,10 @@ struct GlobalUniformBufferObject {
     alignas(16) glm::vec3 eyePos;
 };
 
-// **A10** Place here the CPP struct for the uniform buffer for the matrices
-struct ScooterMatricesUniformBufferObject {
-    alignas(16) glm::mat4 mvpMat;
-    alignas(16) glm::mat4 mMat;
-    alignas(16) glm::mat4 nMat;
-};
-
-struct ScooterFWheelMatricesUniformBufferObject {
-    alignas(16) glm::mat4 mvpMat;
-    alignas(16) glm::mat4 mMat;
-    alignas(16) glm::mat4 nMat;
-};
-
-struct CityMatricesUniformBufferObject {
-    alignas(16) glm::mat4 mvpMat;  // Model-View-Projection matrix
-    alignas(16) glm::mat4 mMat;    // Model matrix
-    alignas(16) glm::mat4 nMat;    // Normal matrix
-};
-
-struct PizzeriaMatricesUniformBufferObject {
-    alignas(16) glm::mat4 mvpMat;  // Model-View-Projection matrix
-    alignas(16) glm::mat4 mMat;    // Model matrix
-    alignas(16) glm::mat4 nMat;    // Normal matrix
+struct SingleObjectMatricesUniformBufferObject {
+        alignas(16) glm::mat4 mvpMat;
+        alignas(16) glm::mat4 mMat;
+        alignas(16) glm::mat4 nMat;
 };
 
 #define NSKYSCRAPER 16
@@ -66,25 +47,7 @@ int indicesSkyScraper2[NSKYSCRAPER] = {2, 6, 10, 18, 20, 25, 33, 41, 45, 50, 52,
 int indicesSkyScraper3[NSKYSCRAPER] = {4, 7, 11, 14, 19, 21, 23, 29, 31, 32, 34, 39, 42, 44, 47, 48};
 int indicesSkyScraper4[NSKYSCRAPER] = {0, 9, 13, 17, 24, 27, 35, 36, 38, 43, 46, 51, 55, 57, 59, 62};
 
-struct SkyScraper1MatricesUniformBufferObject {
-    alignas(16) glm::mat4 mvpMat[NSKYSCRAPER];  // Model-View-Projection matrix
-    alignas(16) glm::mat4 mMat[NSKYSCRAPER];    // Model matrix
-    alignas(16) glm::mat4 nMat[NSKYSCRAPER];    // Normal matrix
-};
-
-struct SkyScraper2MatricesUniformBufferObject {
-    alignas(16) glm::mat4 mvpMat[NSKYSCRAPER];  // Model-View-Projection matrix
-    alignas(16) glm::mat4 mMat[NSKYSCRAPER];    // Model matrix
-    alignas(16) glm::mat4 nMat[NSKYSCRAPER];    // Normal matrix
-};
-
-struct SkyScraper3MatricesUniformBufferObject {
-    alignas(16) glm::mat4 mvpMat[NSKYSCRAPER];  // Model-View-Projection matrix
-    alignas(16) glm::mat4 mMat[NSKYSCRAPER];    // Model matrix
-    alignas(16) glm::mat4 nMat[NSKYSCRAPER];    // Normal matrix
-};
-
-struct SkyScraper4MatricesUniformBufferObject {
+struct SkyScraperMatricesUniformBufferObject {
     alignas(16) glm::mat4 mvpMat[NSKYSCRAPER];  // Model-View-Projection matrix
     alignas(16) glm::mat4 mMat[NSKYSCRAPER];    // Model matrix
     alignas(16) glm::mat4 nMat[NSKYSCRAPER];    // Normal matrix
@@ -96,29 +59,37 @@ int indicesTree2[16] = {2, 6, 10, 18, 20, 25, 33, 41, 45, 50, 52, 53, 54, 56, 58
 int indicesTree3[16] = {4, 7, 11, 14, 19, 21, 23, 29, 31, 32, 34, 39, 42, 44, 47, 48};
 int indicesTree4[16] = {0, 9, 13, 17, 24, 27, 35, 36, 38, 43, 46, 51, 55, 57, 59, 62};
 
-struct Tree1MatricesUniformBufferObject {
+struct TreeMatricesUniformBufferObject {
     alignas(16) glm::mat4 mvpMat[NTREE];  // Model-View-Projection matrix
     alignas(16) glm::mat4 mMat[NTREE];    // Model matrix
     alignas(16) glm::mat4 nMat[NTREE];    // Normal matrix
 };
 
-struct Tree2MatricesUniformBufferObject {
-    alignas(16) glm::mat4 mvpMat[NTREE];  // Model-View-Projection matrix
-    alignas(16) glm::mat4 mMat[NTREE];    // Model matrix
-    alignas(16) glm::mat4 nMat[NTREE];    // Normal matrix
-};
+// Funzione per aggiornare le matrici di un albero
+void updateTreeMatrices(TreeMatricesUniformBufferObject* treeUbo, int& counter, int i, int offset, const glm::mat4& ViewPrj, bool applyScale) {
+    for (int k = 0; k < 4; ++k) {
+        glm::vec3 translation;
+        switch (k) {
+            case 0: translation = glm::vec3(75 - (24 * (i % 8)), 0.0, 85 - offset - (24 * (i / 8))); break;
+            case 1: translation = glm::vec3(84 + offset - (24 * (i % 8)), 0.0, 75 - (24 * (i / 8))); break;
+            case 2: translation = glm::vec3(93 - (24 * (i % 8)), 0.0, 85 + offset - (24 * (i / 8))); break;
+            case 3: translation = glm::vec3(84 - offset - (24 * (i % 8)), 0.0, 93 - (24 * (i / 8))); break;
+        }
 
-struct Tree3MatricesUniformBufferObject {
-    alignas(16) glm::mat4 mvpMat[NTREE];  // Model-View-Projection matrix
-    alignas(16) glm::mat4 mMat[NTREE];    // Model matrix
-    alignas(16) glm::mat4 nMat[NTREE];    // Normal matrix
-};
+        int idx = counter * 4 + k;
+        treeUbo->mMat[idx] = glm::translate(glm::mat4(1.0f), translation);
 
-struct Tree4MatricesUniformBufferObject {
-    alignas(16) glm::mat4 mvpMat[NTREE];  // Model-View-Projection matrix
-    alignas(16) glm::mat4 mMat[NTREE];    // Model matrix
-    alignas(16) glm::mat4 nMat[NTREE];    // Normal matrix
-};
+        // Applica la scala solo se richiesto
+        if (applyScale) {
+            treeUbo->mMat[idx] = glm::scale(treeUbo->mMat[idx], glm::vec3(0.5f, 0.5f, 0.5f));
+        }
+
+        treeUbo->mvpMat[idx] = ViewPrj * treeUbo->mMat[idx];
+        treeUbo->nMat[idx] = glm::inverse(glm::transpose(treeUbo->mMat[idx]));
+    }
+
+    ++counter;
+}
 
 #define NLAMPPOST 256
 struct LampPostMatricesUniformBufferObject {
@@ -136,162 +107,18 @@ struct EmissionUniformBufferObject {
 };
 
 // **A10** Place here the CPP struct for the uniform buffer for the parameters
-struct ScooterParametersUniformBufferObject {
+struct ObjectParametersUniformBufferObject {
     alignas(4) float Pow;
     alignas(4) float Ang;
-};
-
-struct ScooterFWheelParametersUniformBufferObject {
-    alignas(4) float Pow;
-    alignas(4) float Ang;
-};
-
-struct CityParametersUniformBufferObject {
-    alignas(4) float Pow;  // Parametro di potenza speculare, simile a quello dello scooter
-    alignas(4) float Ang;  // Parametro per eventuali trasformazioni basate sul tempo (opzionale)
-};
-
-struct PizzeriaParametersUniformBufferObject {
-    alignas(4) float Pow;  // Parametro di potenza speculare, simile a quello dello scooter
-    alignas(4) float Ang;  // Parametro per eventuali trasformazioni basate sul tempo (opzionale)
-};
-
-struct SkyScraper1ParametersUniformBufferObject {
-    alignas(4) float Pow;  // Parametro di potenza speculare, simile a quello dello scooter
-    alignas(4) float Ang;  // Parametro per eventuali trasformazioni basate sul tempo (opzionale)
-};
-
-struct SkyScraper2ParametersUniformBufferObject {
-    alignas(4) float Pow;  // Parametro di potenza speculare, simile a quello dello scooter
-    alignas(4) float Ang;  // Parametro per eventuali trasformazioni basate sul tempo (opzionale)
-};
-
-struct SkyScraper3ParametersUniformBufferObject {
-    alignas(4) float Pow;  // Parametro di potenza speculare, simile a quello dello scooter
-    alignas(4) float Ang;  // Parametro per eventuali trasformazioni basate sul tempo (opzionale)
-};
-
-struct SkyScraper4ParametersUniformBufferObject {
-    alignas(4) float Pow;  // Parametro di potenza speculare, simile a quello dello scooter
-    alignas(4) float Ang;  // Parametro per eventuali trasformazioni basate sul tempo (opzionale)
-};
-
-struct Tree1ParametersUniformBufferObject {
-    alignas(4) float Pow;  // Parametro di potenza speculare, simile a quello dello scooter
-    alignas(4) float Ang;  // Parametro per eventuali trasformazioni basate sul tempo (opzionale)
-};
-
-struct Tree2ParametersUniformBufferObject {
-    alignas(4) float Pow;  // Parametro di potenza speculare, simile a quello dello scooter
-    alignas(4) float Ang;  // Parametro per eventuali trasformazioni basate sul tempo (opzionale)
-};
-
-struct Tree3ParametersUniformBufferObject {
-    alignas(4) float Pow;  // Parametro di potenza speculare, simile a quello dello scooter
-    alignas(4) float Ang;  // Parametro per eventuali trasformazioni basate sul tempo (opzionale)
-};
-
-struct Tree4ParametersUniformBufferObject {
-    alignas(4) float Pow;  // Parametro di potenza speculare, simile a quello dello scooter
-    alignas(4) float Ang;  // Parametro per eventuali trasformazioni basate sul tempo (opzionale)
-};
-
-struct LampPostParametersUniformBufferObject {
-    alignas(4) float Pow;  // Parametro di potenza speculare, simile a quello dello scooter
-    alignas(4) float Ang;  // Parametro per eventuali trasformazioni basate sul tempo (opzionale)
 };
 
 
 // **A10** Place here the CPP struct for the vertex definition
-struct ScooterVertex {
+struct ObjectVertex {
     glm::vec3 pos;
     glm::vec3 norm;
     glm::vec2 UV;
     glm::vec4 tan;
-};
-
-struct ScooterFWheelVertex {
-    glm::vec3 pos;
-    glm::vec3 norm;
-    glm::vec2 UV;
-    glm::vec4 tan;
-};
-
-struct CityVertex {
-    glm::vec3 pos;   // Posizione del vertex
-    glm::vec3 norm;  // Normale del vertex
-    glm::vec2 UV;    // Coordinate UV per la texture
-    glm::vec4 tan;   // Tangente per il normal mapping (opzionale, se il modello lo richiede)
-};
-
-struct PizzeriaVertex {
-    glm::vec3 pos;   // Posizione del vertex
-    glm::vec3 norm;  // Normale del vertex
-    glm::vec2 UV;    // Coordinate UV per la texture
-    glm::vec4 tan;   // Tangente per il normal mapping (opzionale, se il modello lo richiede)
-};
-
-struct SkyScraper1Vertex {
-    glm::vec3 pos;   // Posizione del vertex
-    glm::vec3 norm;  // Normale del vertex
-    glm::vec2 UV;    // Coordinate UV per la texture
-    glm::vec4 tan;   // Tangente per il normal mapping (opzionale, se il modello lo richiede)
-};
-
-struct SkyScraper2Vertex {
-    glm::vec3 pos;   // Posizione del vertex
-    glm::vec3 norm;  // Normale del vertex
-    glm::vec2 UV;    // Coordinate UV per la texture
-    glm::vec4 tan;   // Tangente per il normal mapping (opzionale, se il modello lo richiede)
-};
-
-struct SkyScraper3Vertex {
-    glm::vec3 pos;   // Posizione del vertex
-    glm::vec3 norm;  // Normale del vertex
-    glm::vec2 UV;    // Coordinate UV per la texture
-    glm::vec4 tan;   // Tangente per il normal mapping (opzionale, se il modello lo richiede)
-};
-
-struct SkyScraper4Vertex {
-    glm::vec3 pos;   // Posizione del vertex
-    glm::vec3 norm;  // Normale del vertex
-    glm::vec2 UV;    // Coordinate UV per la texture
-    glm::vec4 tan;   // Tangente per il normal mapping (opzionale, se il modello lo richiede)
-};
-
-struct Tree1Vertex {
-    glm::vec3 pos;   // Posizione del vertex
-    glm::vec3 norm;  // Normale del vertex
-    glm::vec2 UV;    // Coordinate UV per la texture
-    glm::vec4 tan;   // Tangente per il normal mapping (opzionale, se il modello lo richiede)
-};
-
-struct Tree2Vertex {
-    glm::vec3 pos;   // Posizione del vertex
-    glm::vec3 norm;  // Normale del vertex
-    glm::vec2 UV;    // Coordinate UV per la texture
-    glm::vec4 tan;   // Tangente per il normal mapping (opzionale, se il modello lo richiede)
-};
-
-struct Tree3Vertex {
-    glm::vec3 pos;   // Posizione del vertex
-    glm::vec3 norm;  // Normale del vertex
-    glm::vec2 UV;    // Coordinate UV per la texture
-    glm::vec4 tan;   // Tangente per il normal mapping (opzionale, se il modello lo richiede)
-};
-
-struct Tree4Vertex {
-    glm::vec3 pos;   // Posizione del vertex
-    glm::vec3 norm;  // Normale del vertex
-    glm::vec2 UV;    // Coordinate UV per la texture
-    glm::vec4 tan;   // Tangente per il normal mapping (opzionale, se il modello lo richiede)
-};
-
-struct LampPostVertex {
-    glm::vec3 pos;   // Posizione del vertex
-    glm::vec3 norm;  // Normale del vertex
-    glm::vec2 UV;    // Coordinate UV per la texture
-    glm::vec4 tan;   // Tangente per il normal mapping (opzionale, se il modello lo richiede)
 };
 
 struct skyBoxVertex {
@@ -367,14 +194,8 @@ protected:
     DescriptorSetLayout DSLScooterFWheel;
     DescriptorSetLayout DSLCity;
     DescriptorSetLayout DSLPizzeria;
-    DescriptorSetLayout DSLSkyScraper1;
-    DescriptorSetLayout DSLSkyScraper2;
-    DescriptorSetLayout DSLSkyScraper3;
-    DescriptorSetLayout DSLSkyScraper4;
-    DescriptorSetLayout DSLTree1;
-    DescriptorSetLayout DSLTree2;
-    DescriptorSetLayout DSLTree3;
-    DescriptorSetLayout DSLTree4;
+    DescriptorSetLayout DSLSkyScraper[4];
+    DescriptorSetLayout DSLTree[4];
     DescriptorSetLayout DSLLampPost;
     DescriptorSetLayout DSLskyBox;	// For skyBox
     DescriptorSetLayout DSLEmission;
@@ -385,14 +206,8 @@ protected:
     VertexDescriptor VDScooterFWheel;
     VertexDescriptor VDCity;
     VertexDescriptor VDPizzeria;
-    VertexDescriptor VDSkyScraper1;
-    VertexDescriptor VDSkyScraper2;
-    VertexDescriptor VDSkyScraper3;
-    VertexDescriptor VDSkyScraper4;
-    VertexDescriptor VDTree1;
-    VertexDescriptor VDTree2;
-    VertexDescriptor VDTree3;
-    VertexDescriptor VDTree4;
+    VertexDescriptor VDSkyScraper[4];
+    VertexDescriptor VDTree[4];
     VertexDescriptor VDLampPost;
     VertexDescriptor VDskyBox;
     VertexDescriptor VDEmission;
@@ -402,14 +217,8 @@ protected:
     Pipeline PScooterFWheel;
     Pipeline PCity;
     Pipeline PPizzeria;
-    Pipeline PSkyScraper1;
-    Pipeline PSkyScraper2;
-    Pipeline PSkyScraper3;
-    Pipeline PSkyScraper4;
-    Pipeline PTree1;
-    Pipeline PTree2;
-    Pipeline PTree3;
-    Pipeline PTree4;
+    Pipeline PSkyScraper[4];
+    Pipeline PTree[4];
     Pipeline PLampPost;
     Pipeline PskyBox;
     Pipeline PEmission;
@@ -427,14 +236,8 @@ protected:
     Model MFWheel;
     Model MCity;
     Model MPizzeria;
-    Model MSkyScraper1;
-    Model MSkyScraper2;
-    Model MSkyScraper3;
-    Model MSkyScraper4;
-    Model MTree1;
-    Model MTree2;
-    Model MTree3;
-    Model MTree4;
+    Model MSkyScraper[4];
+    Model MTree[4];
     Model MLampPost;
     Model MskyBox;
     Model Msun;
@@ -442,14 +245,8 @@ protected:
     Texture TScooterBaseColor, TScooterNormal, TScooterHeight, TScooterMetallic, TScooterRoughness, TScooterAmbientOcclusion;
     Texture TCity;
     Texture TPizzeria;
-    Texture TSkyScraper1;
-    Texture TSkyScraper2;
-    Texture TSkyScraper3;
-    Texture TSkyScraper4;
-    Texture TTree1;
-    Texture TTree2;
-    Texture TTree3;
-    Texture TTree4;
+    Texture TSkyScraper[4];
+    Texture TTree[4];
     Texture TLampPost;
     Texture TskyBox;
     Texture Tsun;
@@ -458,14 +255,8 @@ protected:
     DescriptorSet DSScooterFWheel;
     DescriptorSet DSCity;
     DescriptorSet DSPizzeria;
-    DescriptorSet DSSkyScraper1;
-    DescriptorSet DSSkyScraper2;
-    DescriptorSet DSSkyScraper3;
-    DescriptorSet DSSkyScraper4;
-    DescriptorSet DSTree1;
-    DescriptorSet DSTree2;
-    DescriptorSet DSTree3;
-    DescriptorSet DSTree4;
+    DescriptorSet DSSkyScraper[4];
+    DescriptorSet DSTree[4];
     DescriptorSet DSLampPost;
     DescriptorSet DSskyBox;
     DescriptorSet DSsun;
@@ -520,69 +311,45 @@ protected:
 
 // **A10** Place here the initialization of the the DescriptorSetLayout
         DSLScooter.init(this, {
-                {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(ScooterMatricesUniformBufferObject), 1},  // Matrice uniforme del modello scooter
+                {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(SingleObjectMatricesUniformBufferObject), 1},  // Matrice uniforme del modello scooter
                 {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1},  // Texture Base Color
                 {2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1},  // Texture Normal
                 {3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 2, 1},  // Texture Height
                 {4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3, 1},  // Texture Metallic
                 {5, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 4, 1},  // Texture Roughness
                 {6, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 5, 1},  // Texture Ambient Occlusion
-                {7, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(ScooterParametersUniformBufferObject), 1},
+                {7, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(ObjectParametersUniformBufferObject), 1},
         });
         DSLCity.init(this, {
-                {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(CityMatricesUniformBufferObject), 1},  // Matrice uniforme del modello scooter
+                {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(SingleObjectMatricesUniformBufferObject), 1},  // Matrice uniforme del modello scooter
                 {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1},  // Texture Base Color
-                {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(CityParametersUniformBufferObject), 1},
+                {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(ObjectParametersUniformBufferObject), 1},
         });
         DSLPizzeria.init(this, {
-                {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(PizzeriaMatricesUniformBufferObject), 1},  // Matrice uniforme del modello scooter
+                {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(SingleObjectMatricesUniformBufferObject), 1},  // Matrice uniforme del modello scooter
                 {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1},  // Texture Base Color
-                {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(PizzeriaParametersUniformBufferObject), 1},
+                {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(ObjectParametersUniformBufferObject), 1},
         });
-        DSLSkyScraper1.init(this, {
-                {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(SkyScraper1MatricesUniformBufferObject), 1},  // Matrice uniforme del modello scooter
-                {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1},  // Texture
-                {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(SkyScraper1ParametersUniformBufferObject), 1},
-        });
-        DSLSkyScraper2.init(this, {
-                {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(SkyScraper2MatricesUniformBufferObject), 1},  // Matrice uniforme del modello scooter
-                {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1},  // Texture
-                {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(SkyScraper2ParametersUniformBufferObject), 1},
-        });
-        DSLSkyScraper3.init(this, {
-                {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(SkyScraper3MatricesUniformBufferObject), 1},  // Matrice uniforme del modello scooter
-                {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1},  // Texture
-                {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(SkyScraper3ParametersUniformBufferObject), 1},
-        });
-        DSLSkyScraper4.init(this, {
-                {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(SkyScraper4MatricesUniformBufferObject), 1},  // Matrice uniforme del modello scooter
-                {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1},  // Texture
-                {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(SkyScraper4ParametersUniformBufferObject), 1},
-        });
-        DSLTree1.init(this, {
-                {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(Tree1MatricesUniformBufferObject), 1},  // Matrice uniforme del modello scooter
-                {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1},  // Texture
-                {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(Tree1ParametersUniformBufferObject), 1},
-        });
-        DSLTree2.init(this, {
-                {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(Tree2MatricesUniformBufferObject), 1},  // Matrice uniforme del modello scooter
-                {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1},  // Texture
-                {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(Tree2ParametersUniformBufferObject), 1},
-        });
-        DSLTree3.init(this, {
-                {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(Tree3MatricesUniformBufferObject), 1},  // Matrice uniforme del modello scooter
-                {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1},  // Texture
-                {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(Tree3ParametersUniformBufferObject), 1},
-        });
-        DSLTree4.init(this, {
-                {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(Tree4MatricesUniformBufferObject), 1},  // Matrice uniforme del modello scooter
-                {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1},  // Texture
-                {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(Tree4ParametersUniformBufferObject), 1},
-        });
+        for(int i = 0; i < 4; i++)
+        {
+            DSLSkyScraper[i].init(this, {
+                    {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(SkyScraperMatricesUniformBufferObject), 1},
+                    {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1},
+                    {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(ObjectParametersUniformBufferObject), 1},
+            });
+        }
+        for(int i = 0; i < 4; i++)
+        {
+            DSLTree[i].init(this, {
+                    {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(TreeMatricesUniformBufferObject), 1},  // Matrice uniforme del modello scooter
+                    {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1},  // Texture
+                    {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(ObjectParametersUniformBufferObject), 1},
+            });
+        }
         DSLLampPost.init(this, {
                 {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(LampPostMatricesUniformBufferObject), 1},  // Matrice uniforme del modello scooter
                 {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1},  // Texture Base Color
-                {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(LampPostParametersUniformBufferObject), 1},
+                {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(ObjectParametersUniformBufferObject), 1},
         });
         DSLskyBox.init(this, {
                 {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, sizeof(skyBoxUniformBufferObject), 1},
@@ -595,113 +362,65 @@ protected:
 
 // **A10** Place here the initialization for the VertexDescriptor
         VDScooter.init(this, {
-                {0, sizeof(ScooterVertex), VK_VERTEX_INPUT_RATE_VERTEX}  // Descrive la dimensione del vertice e la frequenza di input
+                {0, sizeof(ObjectVertex), VK_VERTEX_INPUT_RATE_VERTEX}  // Descrive la dimensione del vertice e la frequenza di input
         }, {
                                // Descrizione degli attributi dei vertici
-                               {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(ScooterVertex, pos), sizeof(glm::vec3), POSITION},  // Posizione (3 componenti float)
-                               {0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(ScooterVertex, norm), sizeof(glm::vec3), NORMAL},    // Normale (3 componenti float)
-                               {0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(ScooterVertex, UV), sizeof(glm::vec2), UV},             // UV (2 componenti float)
-                               {0, 3, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(ScooterVertex, tan), sizeof(glm::vec4), TANGENT}  // Tangente (4 componenti float)
+                               {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(ObjectVertex, pos), sizeof(glm::vec3), POSITION},  // Posizione (3 componenti float)
+                               {0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(ObjectVertex, norm), sizeof(glm::vec3), NORMAL},    // Normale (3 componenti float)
+                               {0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(ObjectVertex, UV), sizeof(glm::vec2), UV},             // UV (2 componenti float)
+                               {0, 3, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(ObjectVertex, tan), sizeof(glm::vec4), TANGENT}  // Tangente (4 componenti float)
                        });
 
         VDCity.init(this, {
-                {0, sizeof(CityVertex), VK_VERTEX_INPUT_RATE_VERTEX}  // Descrive la dimensione del vertice e la frequenza di input
+                {0, sizeof(ObjectVertex), VK_VERTEX_INPUT_RATE_VERTEX}  // Descrive la dimensione del vertice e la frequenza di input
         }, {
                             // Descrizione degli attributi dei vertici
-                            {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(CityVertex, pos), sizeof(glm::vec3), POSITION},  // Posizione (3 componenti float)
-                            {0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(CityVertex, norm), sizeof(glm::vec3), NORMAL},    // Normale (3 componenti float)
-                            {0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(CityVertex, UV), sizeof(glm::vec2), UV},             // UV (2 componenti float)
-                            {0, 3, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(CityVertex, tan), sizeof(glm::vec4), TANGENT}  // Tangente (4 componenti float)
+                            {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(ObjectVertex, pos), sizeof(glm::vec3), POSITION},  // Posizione (3 componenti float)
+                            {0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(ObjectVertex, norm), sizeof(glm::vec3), NORMAL},    // Normale (3 componenti float)
+                            {0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(ObjectVertex, UV), sizeof(glm::vec2), UV},             // UV (2 componenti float)
+                            {0, 3, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(ObjectVertex, tan), sizeof(glm::vec4), TANGENT}  // Tangente (4 componenti float)
                     });
         VDPizzeria.init(this, {
-                {0, sizeof(CityVertex), VK_VERTEX_INPUT_RATE_VERTEX}  // Descrive la dimensione del vertice e la frequenza di input
+                {0, sizeof(ObjectVertex), VK_VERTEX_INPUT_RATE_VERTEX}  // Descrive la dimensione del vertice e la frequenza di input
         }, {
                             // Descrizione degli attributi dei vertici
-                            {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(PizzeriaVertex, pos), sizeof(glm::vec3), POSITION},  // Posizione (3 componenti float)
-                            {0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(PizzeriaVertex, norm), sizeof(glm::vec3), NORMAL},    // Normale (3 componenti float)
-                            {0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(PizzeriaVertex, UV), sizeof(glm::vec2), UV},             // UV (2 componenti float)
-                            {0, 3, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(PizzeriaVertex, tan), sizeof(glm::vec4), TANGENT}  // Tangente (4 componenti float)
+                            {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(ObjectVertex, pos), sizeof(glm::vec3), POSITION},  // Posizione (3 componenti float)
+                            {0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(ObjectVertex, norm), sizeof(glm::vec3), NORMAL},    // Normale (3 componenti float)
+                            {0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(ObjectVertex, UV), sizeof(glm::vec2), UV},             // UV (2 componenti float)
+                            {0, 3, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(ObjectVertex, tan), sizeof(glm::vec4), TANGENT}  // Tangente (4 componenti float)
                     });
-        VDSkyScraper1.init(this, {
-                {0, sizeof(SkyScraper1Vertex), VK_VERTEX_INPUT_RATE_VERTEX}  // Descrive la dimensione del vertice e la frequenza di input
-        }, {
-                                  // Descrizione degli attributi dei vertici
-                                  {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(SkyScraper1Vertex, pos), sizeof(glm::vec3), POSITION},  // Posizione (3 componenti float)
-                                  {0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(SkyScraper1Vertex, norm), sizeof(glm::vec3), NORMAL},    // Normale (3 componenti float)
-                                  {0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(SkyScraper1Vertex, UV), sizeof(glm::vec2), UV},             // UV (2 componenti float)
-                                  {0, 3, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(SkyScraper1Vertex, tan), sizeof(glm::vec4), TANGENT}  // Tangente (4 componenti float)
-                          });
-        VDSkyScraper2.init(this, {
-                {0, sizeof(SkyScraper2Vertex), VK_VERTEX_INPUT_RATE_VERTEX}  // Descrive la dimensione del vertice e la frequenza di input
-        }, {
-                                   // Descrizione degli attributi dei vertici
-                                   {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(SkyScraper2Vertex, pos), sizeof(glm::vec3), POSITION},  // Posizione (3 componenti float)
-                                   {0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(SkyScraper2Vertex, norm), sizeof(glm::vec3), NORMAL},    // Normale (3 componenti float)
-                                   {0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(SkyScraper2Vertex, UV), sizeof(glm::vec2), UV},             // UV (2 componenti float)
-                                   {0, 3, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(SkyScraper2Vertex, tan), sizeof(glm::vec4), TANGENT}  // Tangente (4 componenti float)
-                           });
-        VDSkyScraper3.init(this, {
-                {0, sizeof(SkyScraper3Vertex), VK_VERTEX_INPUT_RATE_VERTEX}  // Descrive la dimensione del vertice e la frequenza di input
-        }, {
-                                   // Descrizione degli attributi dei vertici
-                                   {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(SkyScraper3Vertex, pos), sizeof(glm::vec3), POSITION},  // Posizione (3 componenti float)
-                                   {0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(SkyScraper3Vertex, norm), sizeof(glm::vec3), NORMAL},    // Normale (3 componenti float)
-                                   {0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(SkyScraper3Vertex, UV), sizeof(glm::vec2), UV},             // UV (2 componenti float)
-                                   {0, 3, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(SkyScraper3Vertex, tan), sizeof(glm::vec4), TANGENT}  // Tangente (4 componenti float)
-                           });
-        VDSkyScraper4.init(this, {
-                {0, sizeof(SkyScraper4Vertex), VK_VERTEX_INPUT_RATE_VERTEX}  // Descrive la dimensione del vertice e la frequenza di input
-        }, {
-                                   // Descrizione degli attributi dei vertici
-                                   {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(SkyScraper4Vertex, pos), sizeof(glm::vec3), POSITION},  // Posizione (3 componenti float)
-                                   {0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(SkyScraper4Vertex, norm), sizeof(glm::vec3), NORMAL},    // Normale (3 componenti float)
-                                   {0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(SkyScraper4Vertex, UV), sizeof(glm::vec2), UV},             // UV (2 componenti float)
-                                   {0, 3, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(SkyScraper4Vertex, tan), sizeof(glm::vec4), TANGENT}  // Tangente (4 componenti float)
-                           });
-        VDTree1.init(this, {
-                {0, sizeof(Tree1Vertex), VK_VERTEX_INPUT_RATE_VERTEX}  // Descrive la dimensione del vertice e la frequenza di input
-        }, {
-                                   // Descrizione degli attributi dei vertici
-                                   {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Tree1Vertex, pos), sizeof(glm::vec3), POSITION},  // Posizione (3 componenti float)
-                                   {0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Tree1Vertex, norm), sizeof(glm::vec3), NORMAL},    // Normale (3 componenti float)
-                                   {0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(Tree1Vertex, UV), sizeof(glm::vec2), UV},             // UV (2 componenti float)
-                                   {0, 3, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(Tree1Vertex, tan), sizeof(glm::vec4), TANGENT}  // Tangente (4 componenti float)
-                           });
-        VDTree2.init(this, {
-                {0, sizeof(Tree2Vertex), VK_VERTEX_INPUT_RATE_VERTEX}  // Descrive la dimensione del vertice e la frequenza di input
-        }, {
-                                   // Descrizione degli attributi dei vertici
-                                   {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Tree2Vertex, pos), sizeof(glm::vec3), POSITION},  // Posizione (3 componenti float)
-                                   {0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Tree2Vertex, norm), sizeof(glm::vec3), NORMAL},    // Normale (3 componenti float)
-                                   {0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(Tree2Vertex, UV), sizeof(glm::vec2), UV},             // UV (2 componenti float)
-                                   {0, 3, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(Tree2Vertex, tan), sizeof(glm::vec4), TANGENT}  // Tangente (4 componenti float)
-                           });
-        VDTree3.init(this, {
-                {0, sizeof(Tree3Vertex), VK_VERTEX_INPUT_RATE_VERTEX}  // Descrive la dimensione del vertice e la frequenza di input
-        }, {
-                                   // Descrizione degli attributi dei vertici
-                                   {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Tree3Vertex, pos), sizeof(glm::vec3), POSITION},  // Posizione (3 componenti float)
-                                   {0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Tree3Vertex, norm), sizeof(glm::vec3), NORMAL},    // Normale (3 componenti float)
-                                   {0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(Tree3Vertex, UV), sizeof(glm::vec2), UV},             // UV (2 componenti float)
-                                   {0, 3, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(Tree3Vertex, tan), sizeof(glm::vec4), TANGENT}  // Tangente (4 componenti float)
-                           });
-        VDTree4.init(this, {
-                {0, sizeof(Tree4Vertex), VK_VERTEX_INPUT_RATE_VERTEX}  // Descrive la dimensione del vertice e la frequenza di input
-        }, {
-                                   // Descrizione degli attributi dei vertici
-                                   {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Tree4Vertex, pos), sizeof(glm::vec3), POSITION},  // Posizione (3 componenti float)
-                                   {0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Tree4Vertex, norm), sizeof(glm::vec3), NORMAL},    // Normale (3 componenti float)
-                                   {0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(Tree4Vertex, UV), sizeof(glm::vec2), UV},             // UV (2 componenti float)
-                                   {0, 3, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(Tree4Vertex, tan), sizeof(glm::vec4), TANGENT}  // Tangente (4 componenti float)
-                           });
+        for(int i = 0; i < 4; i++)
+        {
+            VDSkyScraper[i].init(this, {
+                    {0, sizeof(ObjectVertex), VK_VERTEX_INPUT_RATE_VERTEX}  // Descrive la dimensione del vertice e la frequenza di input
+            }, {
+                                       // Descrizione degli attributi dei vertici
+                                       {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(ObjectVertex, pos), sizeof(glm::vec3), POSITION},  // Posizione (3 componenti float)
+                                       {0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(ObjectVertex, norm), sizeof(glm::vec3), NORMAL},    // Normale (3 componenti float)
+                                       {0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(ObjectVertex, UV), sizeof(glm::vec2), UV},             // UV (2 componenti float)
+                                       {0, 3, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(ObjectVertex, tan), sizeof(glm::vec4), TANGENT}  // Tangente (4 componenti float)
+                               });
+        }
+        for(int i = 0; i < 4; i++)
+        {
+            VDTree[i].init(this, {
+                    {0, sizeof(ObjectVertex), VK_VERTEX_INPUT_RATE_VERTEX}  // Descrive la dimensione del vertice e la frequenza di input
+            }, {
+                                 // Descrizione degli attributi dei vertici
+                                 {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(ObjectVertex, pos), sizeof(glm::vec3), POSITION},  // Posizione (3 componenti float)
+                                 {0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(ObjectVertex, norm), sizeof(glm::vec3), NORMAL},    // Normale (3 componenti float)
+                                 {0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(ObjectVertex, UV), sizeof(glm::vec2), UV},             // UV (2 componenti float)
+                                 {0, 3, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(ObjectVertex, tan), sizeof(glm::vec4), TANGENT}  // Tangente (4 componenti float)
+                         });
+        }
         VDLampPost.init(this, {
-                {0, sizeof(LampPostVertex), VK_VERTEX_INPUT_RATE_VERTEX}  // Descrive la dimensione del vertice e la frequenza di input
+                {0, sizeof(ObjectVertex), VK_VERTEX_INPUT_RATE_VERTEX}  // Descrive la dimensione del vertice e la frequenza di input
         }, {
                                   // Descrizione degli attributi dei vertici
-                                  {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(LampPostVertex, pos), sizeof(glm::vec3), POSITION},  // Posizione (3 componenti float)
-                                  {0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(LampPostVertex, norm), sizeof(glm::vec3), NORMAL},    // Normale (3 componenti float)
-                                  {0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(LampPostVertex, UV), sizeof(glm::vec2), UV},             // UV (2 componenti float)
-                                  {0, 3, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(LampPostVertex, tan), sizeof(glm::vec4), TANGENT}  // Tangente (4 componenti float)
+                                  {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(ObjectVertex, pos), sizeof(glm::vec3), POSITION},  // Posizione (3 componenti float)
+                                  {0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(ObjectVertex, norm), sizeof(glm::vec3), NORMAL},    // Normale (3 componenti float)
+                                  {0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(ObjectVertex, UV), sizeof(glm::vec2), UV},             // UV (2 componenti float)
+                                  {0, 3, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(ObjectVertex, tan), sizeof(glm::vec4), TANGENT}  // Tangente (4 componenti float)
                           });
         VDskyBox.init(this, {
                 {0, sizeof(skyBoxVertex), VK_VERTEX_INPUT_RATE_VERTEX}
@@ -724,14 +443,14 @@ protected:
         PScooter.init(this, &VDScooter, "shaders/NormalMapVert.spv", "shaders/NormalMapFrag.spv", {&DSLGlobal, &DSLScooter});
         PCity.init(this, &VDCity, "shaders/NormalMapVert.spv", "shaders/CityFrag.spv", {&DSLGlobal, &DSLCity});
         PPizzeria.init(this, &VDPizzeria, "shaders/NormalMapVert.spv", "shaders/PizzeriaFrag.spv", {&DSLGlobal, &DSLPizzeria});
-        PSkyScraper1.init(this, &VDSkyScraper1, "shaders/SkyScraperVert.spv", "shaders/SkyScraperFrag.spv", {&DSLGlobal, &DSLSkyScraper1});
-        PSkyScraper2.init(this, &VDSkyScraper2, "shaders/SkyScraperVert.spv", "shaders/SkyScraperFrag.spv", {&DSLGlobal, &DSLSkyScraper2});
-        PSkyScraper3.init(this, &VDSkyScraper3, "shaders/SkyScraperVert.spv", "shaders/SkyScraperFrag.spv", {&DSLGlobal, &DSLSkyScraper3});
-        PSkyScraper4.init(this, &VDSkyScraper4, "shaders/SkyScraperVert.spv", "shaders/SkyScraperFrag.spv", {&DSLGlobal, &DSLSkyScraper4});
-        PTree1.init(this, &VDTree1, "shaders/TreeVert.spv", "shaders/TreeFrag.spv", {&DSLGlobal, &DSLTree1});
-        PTree2.init(this, &VDTree2, "shaders/TreeVert.spv", "shaders/TreeFrag.spv", {&DSLGlobal, &DSLTree2});
-        PTree3.init(this, &VDTree3, "shaders/TreeVert.spv", "shaders/TreeFrag.spv", {&DSLGlobal, &DSLTree3});
-        PTree4.init(this, &VDTree4, "shaders/TreeVert.spv", "shaders/TreeFrag.spv", {&DSLGlobal, &DSLTree4});
+        for(int i = 0; i < 4; i++)
+        {
+            PSkyScraper[i].init(this, &VDSkyScraper[i], "shaders/SkyScraperVert.spv", "shaders/SkyScraperFrag.spv", {&DSLGlobal, &DSLSkyScraper[i]});
+        }
+        for(int i = 0; i < 4; i++)
+        {
+            PTree[i].init(this, &VDTree[i], "shaders/TreeVert.spv", "shaders/TreeFrag.spv", {&DSLGlobal, &DSLTree[i]});
+        }
         PLampPost.init(this, &VDLampPost, "shaders/LampPostVert.spv", "shaders/LampPostFrag.spv", {&DSLGlobal, &DSLLampPost});
         PskyBox.init(this, &VDskyBox, "shaders/SkyBoxVert.spv", "shaders/SkyBoxFrag.spv", {&DSLskyBox});
         PskyBox.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
@@ -743,14 +462,25 @@ protected:
         MScooter.init(this, &VDScooter, "models/Scooter.obj", OBJ);
         MCity.init(this, &VDCity, "models/road.obj", OBJ);
         MPizzeria.init(this, &VDPizzeria, "models/Pizzeria/pizzeria.obj", OBJ);
-        MSkyScraper1.init(this, &VDSkyScraper1, "models/apartment_1.mgcg", MGCG);
-        MSkyScraper2.init(this, &VDSkyScraper2, "models/apartment_2.mgcg", MGCG);
-        MSkyScraper3.init(this, &VDSkyScraper3, "models/apartment_3.mgcg", MGCG);
-        MSkyScraper4.init(this, &VDSkyScraper4, "models/apartment_4.mgcg", MGCG);
-        MTree1.init(this, &VDTree1, "models/vegetation.021.mgcg", MGCG);
-        MTree2.init(this, &VDTree2, "models/vegetation.023.mgcg", MGCG);
-        MTree3.init(this, &VDTree3, "models/vegetation.024.mgcg", MGCG);
-        MTree4.init(this, &VDTree4, "models/vegetation.025.mgcg", MGCG);
+        const char* modelPaths[4] = {
+                "models/apartment_1.mgcg",
+                "models/apartment_2.mgcg",
+                "models/apartment_3.mgcg",
+                "models/apartment_4.mgcg"
+        };
+        for (int i = 0; i < 4; ++i) {
+            MSkyScraper[i].init(this, &VDSkyScraper[i], modelPaths[i], MGCG);
+        }
+        const char* treeModelPaths[4] = {
+                "models/vegetation.021.mgcg",
+                "models/vegetation.023.mgcg",
+                "models/vegetation.024.mgcg",
+                "models/vegetation.025.mgcg"
+        };
+
+        for (int i = 0; i < 4; ++i) {
+            MTree[i].init(this, &VDTree[i], treeModelPaths[i], MGCG);
+        }
         MLampPost.init(this, &VDLampPost, "models/lamppost.mgcg", MGCG);
         MskyBox.init(this, &VDskyBox, "models/SkyBoxCube.obj", OBJ);
         Msun.init(this, &VDEmission, "models/Sphere.obj", OBJ);
@@ -777,15 +507,14 @@ protected:
 
         TPizzeria.init(this, "textures/pizzeria/TPizzeria.jpeg");
 
-        TSkyScraper1.init(this, "textures/Textures_Skyscrapers.png");
-        TSkyScraper2.init(this, "textures/Textures_Skyscrapers.png");
-        TSkyScraper3.init(this, "textures/Textures_Skyscrapers.png");
-        TSkyScraper4.init(this, "textures/Textures_Skyscrapers.png");
-
-        TTree1.init(this, "textures/Textures_Vegetation.png");
-        TTree2.init(this, "textures/Textures_Vegetation.png");
-        TTree3.init(this, "textures/Textures_Vegetation.png");
-        TTree4.init(this, "textures/Textures_Vegetation.png");
+        for(int i = 0; i < 4; i++)
+        {
+            TSkyScraper[i].init(this, "textures/Textures_Skyscrapers.png");
+        }
+        for(int i = 0; i < 4; i++)
+        {
+            TTree[i].init(this, "textures/Textures_Vegetation.png");
+        }
 
         TLampPost.init(this, "textures/Textures_Skyscrapers.png");
 
@@ -806,7 +535,6 @@ protected:
         std::cout << "Textures in the Pool        : " << DPSZs.texturesInPool << "\n";
         std::cout << "Descriptor Sets in the Pool : " << DPSZs.setsInPool << "\n";
 
-
         ViewMatrix = glm::translate(glm::mat4(1), -CamPos);
 
         ScooterPos = glm::vec3(0.0f, 0.0f, 0.0f);  // Imposta la posizione iniziale dello scooter
@@ -818,14 +546,14 @@ protected:
         PScooter.create();
         PCity.create();
         PPizzeria.create();
-        PSkyScraper1.create();
-        PSkyScraper2.create();
-        PSkyScraper3.create();
-        PSkyScraper4.create();
-        PTree1.create();
-        PTree2.create();
-        PTree3.create();
-        PTree4.create();
+        for(int i = 0; i < 4; i++)
+        {
+            PSkyScraper[i].create();
+        }
+        for(int i = 0; i < 4; i++)
+        {
+            PTree[i].create();
+        }
         PLampPost.create();
         PskyBox.create();
         PEmission.create();
@@ -836,21 +564,19 @@ protected:
         DSScooter.init(this,&DSLScooter,{&TScooterBaseColor, &TScooterNormal, &TScooterHeight, &TScooterMetallic, &TScooterRoughness, &TScooterAmbientOcclusion});
         DSCity.init(this,&DSLCity,{&TCity});
         DSPizzeria.init(this,&DSLPizzeria,{&TPizzeria});
-        DSSkyScraper1.init(this,&DSLSkyScraper1,{&TSkyScraper1});
-        DSSkyScraper2.init(this,&DSLSkyScraper2,{&TSkyScraper2});
-        DSSkyScraper3.init(this,&DSLSkyScraper3,{&TSkyScraper3});
-        DSSkyScraper4.init(this,&DSLSkyScraper4,{&TSkyScraper4});
-        DSTree1.init(this,&DSLTree1,{&TTree1});
-        DSTree2.init(this,&DSLTree2,{&TTree2});
-        DSTree3.init(this,&DSLTree3,{&TTree3});
-        DSTree4.init(this,&DSLTree4,{&TTree4});
+        for(int i = 0; i < 4; i++)
+        {
+            DSSkyScraper[i].init(this,&DSLSkyScraper[i],{&TSkyScraper[i]});
+        }
+        for(int i = 0; i < 4; i++)
+        {
+            DSTree[i].init(this,&DSLTree[i],{&TTree[i]});
+        }
         DSLampPost.init(this,&DSLLampPost,{&TLampPost});
         DSskyBox.init(this, &DSLskyBox, {&TskyBox});
         DSsun.init(this, &DSLEmission, {&Tsun});
 
         DSGlobal.init(this, &DSLGlobal, {});
-
-        
     }
 
     // Here you destroy your pipelines and Descriptor Sets!
@@ -860,14 +586,14 @@ protected:
         PScooter.cleanup();
         PCity.cleanup();
         PPizzeria.cleanup();
-        PSkyScraper1.cleanup();
-        PSkyScraper2.cleanup();
-        PSkyScraper3.cleanup();
-        PSkyScraper4.cleanup();
-        PTree1.cleanup();
-        PTree2.cleanup();
-        PTree3.cleanup();
-        PTree4.cleanup();
+        for(int i = 0; i < 4; i++)
+        {
+            PSkyScraper[i].cleanup();
+        }
+        for(int i = 0; i < 4; i++)
+        {
+            PTree[i].cleanup();
+        }
         PLampPost.cleanup();
         PskyBox.cleanup();
         PEmission.cleanup();
@@ -878,18 +604,17 @@ protected:
         DSScooter.cleanup();
         DSCity.cleanup();
         DSPizzeria.cleanup();
-        DSSkyScraper1.cleanup();
-        DSSkyScraper2.cleanup();
-        DSSkyScraper3.cleanup();
-        DSSkyScraper4.cleanup();
-        DSTree1.cleanup();
-        DSTree2.cleanup();
-        DSTree3.cleanup();
-        DSTree4.cleanup();
+        for(int i = 0; i < 4; i++)
+        {
+            DSSkyScraper[i].cleanup();
+        }
+        for(int i = 0; i < 4; i++)
+        {
+            DSTree[i].cleanup();
+        }
         DSLampPost.cleanup();
         DSskyBox.cleanup();
         DSsun.cleanup();
-        
     }
 
     // Here you destroy all the Models, Texture and Desc. Set Layouts you created!
@@ -913,23 +638,17 @@ protected:
         TPizzeria.cleanup();
         MPizzeria.cleanup();
 
-        TSkyScraper1.cleanup();
-        MSkyScraper1.cleanup();
-        TSkyScraper2.cleanup();
-        MSkyScraper2.cleanup();
-        TSkyScraper3.cleanup();
-        MSkyScraper3.cleanup();
-        TSkyScraper4.cleanup();
-        MSkyScraper4.cleanup();
+        for(int i = 0; i < 4; i++)
+        {
+            TSkyScraper[i].cleanup();
+            MSkyScraper[i].cleanup();
+        }
 
-        TTree1.cleanup();
-        MTree1.cleanup();
-        TTree2.cleanup();
-        MTree2.cleanup();
-        TTree3.cleanup();
-        MTree3.cleanup();
-        TTree4.cleanup();
-        MTree4.cleanup();
+        for(int i = 0; i < 4; i++)
+        {
+            TTree[i].cleanup();
+            MTree[i].cleanup();
+        }
 
         TLampPost.cleanup();
         MLampPost.cleanup();
@@ -946,32 +665,30 @@ protected:
         DSLScooter.cleanup();
         DSLCity.cleanup();
         DSLPizzeria.cleanup();
-        DSLSkyScraper1.cleanup();
-        DSLSkyScraper2.cleanup();
-        DSLSkyScraper3.cleanup();
-        DSLSkyScraper4.cleanup();
-        DSLTree1.cleanup();
-        DSLTree2.cleanup();
-        DSLTree3.cleanup();
-        DSLTree4.cleanup();
+        for(int i = 0; i < 4; i++)
+        {
+            DSLSkyScraper[i].cleanup();
+        }
+        for(int i = 0; i < 4; i++)
+        {
+            DSLTree[i].cleanup();
+        }
         DSLLampPost.cleanup();
         DSLskyBox.cleanup();
         DSLEmission.cleanup();
 
-        			
-
-// **A10** Add the cleanup for the pipeline
+        // Cleanup of the pipelines
         PScooter.destroy();
         PCity.destroy();
         PPizzeria.destroy();
-        PSkyScraper1.destroy();
-        PSkyScraper2.destroy();
-        PSkyScraper3.destroy();
-        PSkyScraper4.destroy();
-        PTree1.destroy();
-        PTree2.destroy();
-        PTree3.destroy();
-        PTree4.destroy();
+        for(int i = 0; i < 4; i++)
+        {
+            PSkyScraper[i].destroy();
+        }
+        for(int i = 0; i < 4; i++)
+        {
+            PTree[i].destroy();
+        }
         PLampPost.destroy();
         PskyBox.destroy();
         PEmission.destroy();
@@ -1010,102 +727,35 @@ protected:
         vkCmdDrawIndexed(commandBuffer,
                          static_cast<uint32_t>(MCity.indices.size()), 1, 0, 0, 0);
 
-                         
+        for(int i = 0; i < 4; i++)
+        {
+            // 3. Binding del pipeline e del modello per gli SkyScraper
+            PSkyScraper[i].bind(commandBuffer);           // Pipeline for the SkyScraper1
+            MSkyScraper[i].bind(commandBuffer);           // Model for the SkyScraper1
 
-// 3. Binding del pipeline e del modello per lo SkyScraper1
-        PSkyScraper1.bind(commandBuffer);                // Pipeline per la città
-        MSkyScraper1.bind(commandBuffer);                // Modello della città
+        // Binding dei descriptor set globali e quelli specifici dello SkyScraper1
+            DSGlobal.bind(commandBuffer, PSkyScraper[i], 0, currentImage);    // Descriptor Set globale per lo SkyScraper1
+            DSSkyScraper[i].bind(commandBuffer, PSkyScraper[i], 1, currentImage);      // Descriptor Set per lo SkyScraper1
 
-// Binding dei descriptor set globali e quelli specifici dello SkyScraper1
-        DSGlobal.bind(commandBuffer, PSkyScraper1, 0, currentImage);    // Descriptor Set globale per lo SkyScraper1
-        DSSkyScraper1.bind(commandBuffer, PSkyScraper1, 1, currentImage);      // Descriptor Set per lo SkyScraper1
+        // Comando di disegno per lo SkyScraper1
+            vkCmdDrawIndexed(commandBuffer,
+                             static_cast<uint32_t>(MSkyScraper[i].indices.size()), NSKYSCRAPER, 0, 0, 0);
+        }
 
-// Comando di disegno per lo SkyScraper1
-        vkCmdDrawIndexed(commandBuffer,
-                         static_cast<uint32_t>(MSkyScraper1.indices.size()), NSKYSCRAPER, 0, 0, 0);
+        for(int i = 0; i < 4; i++)
+        {
+            // 4. Binding del pipeline e del modello per i tree
+            PTree[i].bind(commandBuffer);           // Pipeline for the SkyScraper1
+            MTree[i].bind(commandBuffer);           // Model for the SkyScraper1
 
-// 4. Binding del pipeline e del modello per lo SkyScraper2
-        PSkyScraper2.bind(commandBuffer);                // Pipeline per la città
-        MSkyScraper2.bind(commandBuffer);                // Modello della città
+            // Binding dei descriptor set globali e quelli specifici dello SkyScraper1
+            DSGlobal.bind(commandBuffer, PTree[i], 0, currentImage);    // Descriptor Set globale per lo SkyScraper1
+            DSTree[i].bind(commandBuffer, PTree[i], 1, currentImage);      // Descriptor Set per lo SkyScraper1
 
-// Binding dei descriptor set globali e quelli specifici dello SkyScraper2
-        DSGlobal.bind(commandBuffer, PSkyScraper2, 0, currentImage);    // Descriptor Set globale per lo SkyScraper2
-        DSSkyScraper2.bind(commandBuffer, PSkyScraper2, 1, currentImage);      // Descriptor Set per lo SkyScraper2
-
-// Comando di disegno per lo SkyScraper2
-        vkCmdDrawIndexed(commandBuffer,
-                         static_cast<uint32_t>(MSkyScraper2.indices.size()), NSKYSCRAPER, 0, 0, 0);
-
-// 5. Binding del pipeline e del modello per lo SkyScraper3
-        PSkyScraper3.bind(commandBuffer);                // Pipeline per la città
-        MSkyScraper3.bind(commandBuffer);                // Modello della città
-
-// Binding dei descriptor set globali e quelli specifici dello SkyScraper3
-        DSGlobal.bind(commandBuffer, PSkyScraper3, 0, currentImage);    // Descriptor Set globale per lo SkyScraper3
-        DSSkyScraper3.bind(commandBuffer, PSkyScraper3, 1, currentImage);      // Descriptor Set per lo SkyScraper3
-
-// Comando di disegno per lo SkyScraper3
-        vkCmdDrawIndexed(commandBuffer,
-                         static_cast<uint32_t>(MSkyScraper3.indices.size()), NSKYSCRAPER, 0, 0, 0);
-
-// 6. Binding del pipeline e del modello per lo SkyScraper4
-        PSkyScraper4.bind(commandBuffer);                // Pipeline per la città
-        MSkyScraper4.bind(commandBuffer);                // Modello della città
-
-// Binding dei descriptor set globali e quelli specifici dello SkyScraper4
-        DSGlobal.bind(commandBuffer, PSkyScraper4, 0, currentImage);    // Descriptor Set globale per lo SkyScraper4
-        DSSkyScraper4.bind(commandBuffer, PSkyScraper4, 1, currentImage);      // Descriptor Set per lo SkyScraper4
-
-// Comando di disegno per lo SkyScraper4
-        vkCmdDrawIndexed(commandBuffer,
-                         static_cast<uint32_t>(MSkyScraper4.indices.size()), NSKYSCRAPER, 0, 0, 0);
-
-// 7. Binding del pipeline e del modello per lo Tree1
-        PTree1.bind(commandBuffer);                // Pipeline per la città
-        MTree1.bind(commandBuffer);                // Modello della città
-
-// Binding dei descriptor set globali e quelli specifici dello Tree1
-        DSGlobal.bind(commandBuffer, PTree1, 0, currentImage);    // Descriptor Set globale per lo Tree1
-        DSTree1.bind(commandBuffer, PTree1, 1, currentImage);      // Descriptor Set per lo Tree1
-
-// Comando di disegno per lo Tree1
-        vkCmdDrawIndexed(commandBuffer,
-                         static_cast<uint32_t>(MTree1.indices.size()), NTREE, 0, 0, 0);
-
-// 8. Binding del pipeline e del modello per lo Tree2
-        PTree2.bind(commandBuffer);                // Pipeline per la città
-        MTree2.bind(commandBuffer);                // Modello della città
-
-// Binding dei descriptor set globali e quelli specifici dello Tree2
-        DSGlobal.bind(commandBuffer, PTree2, 0, currentImage);    // Descriptor Set globale per lo Tree2
-        DSTree2.bind(commandBuffer, PTree2, 1, currentImage);      // Descriptor Set per lo Tree2
-
-// Comando di disegno per lo Tree2
-        vkCmdDrawIndexed(commandBuffer,
-                         static_cast<uint32_t>(MTree2.indices.size()), NTREE, 0, 0, 0);
-
-// 9. Binding del pipeline e del modello per lo Tree3
-        PTree3.bind(commandBuffer);                // Pipeline per la città
-        MTree3.bind(commandBuffer);                // Modello della città
-
-// Binding dei descriptor set globali e quelli specifici dello Tree3
-        DSGlobal.bind(commandBuffer, PTree3, 0, currentImage);    // Descriptor Set globale per lo Tree3
-        DSTree3.bind(commandBuffer, PTree3, 1, currentImage);      // Descriptor Set per lo Tree3
-// Comando di disegno per lo Tree3
-        vkCmdDrawIndexed(commandBuffer,
-                         static_cast<uint32_t>(MTree3.indices.size()), NTREE, 0, 0, 0);
-
-// 10. Binding del pipeline e del modello per lo Tree4
-        PTree4.bind(commandBuffer);                // Pipeline per la città
-        MTree4.bind(commandBuffer);                // Modello della città
-
-// Binding dei descriptor set globali e quelli specifici dello Tree4
-        DSGlobal.bind(commandBuffer, PTree4, 0, currentImage);    // Descriptor Set globale per lo Tree4
-        DSTree4.bind(commandBuffer, PTree4, 1, currentImage);      // Descriptor Set per lo Tree4
-
-// Comando di disegno per lo Tree4
-        vkCmdDrawIndexed(commandBuffer,
-                         static_cast<uint32_t>(MTree4.indices.size()), NTREE, 0, 0, 0);
+            // Comando di disegno per lo SkyScraper1
+            vkCmdDrawIndexed(commandBuffer,
+                             static_cast<uint32_t>(MTree[i].indices.size()), NTREE, 0, 0, 0);
+        }
 
 // 11. Binding del pipeline e del modello per il LampPost
         PLampPost.bind(commandBuffer);                // Pipeline per la città
@@ -1190,11 +840,11 @@ protected:
         glm::vec3 proposedPos = ScooterPos;
 
         glm::mat4 M;
-        
+
 
         //Velocity and steering equations
-        const float STEERING_SPEED = glm::radians(80.0f);
-		const float ROT_SPEED = glm::radians(140.0f);
+        const float STEERING_SPEED = glm::radians(60.0f);
+		const float ROT_SPEED = glm::radians(120.0f);
 		const float MOVE_SPEED = 10.0f;
 
 		SteeringAng += -m.x * STEERING_SPEED * deltaT;
@@ -1226,10 +876,7 @@ protected:
 				proposedPos.x = proposedPos.x - sin(Yaw) * dampedVel;
 				proposedPos.z = proposedPos.z - cos(Yaw) * dampedVel;
 			}
-			
-
-        }
-        if(m.x == 0) {
+			if(m.x == 0) {
 				if(SteeringAng > STEERING_SPEED * deltaT) {
 					SteeringAng -= STEERING_SPEED * deltaT;
 				} else if(SteeringAng < -STEERING_SPEED * deltaT) {
@@ -1238,6 +885,9 @@ protected:
 					SteeringAng = 0.0f;
 				}					
 			}
+
+        }
+
 /*
         if (proposedPos != ScooterPos) {
             print = true;
@@ -1300,9 +950,19 @@ protected:
 						 dampedCamPos * exp(-lambdaCam * deltaT); 
 			M = MakeViewProjectionLookAt(dampedCamPos, CamTarget, glm::vec3(0,1,0), CamRoll, glm::radians(90.0f), Ar, 0.1f, 500.0f);
             Mv = ViewMatrix;
-		}else if(currScene == 1){ //Orthogonal camera
-            
-	        M = glm::rotate(glm::mat4(1.0f / 15.0f,0,0,0,  0,-4.0f / 45.f,0,0,   0,0,1.0f/(-500.0f-500.0f),0, 0,0,-500.0f/(-500.0f-500.0f),1), glm::radians(90.0f), glm::vec3(1,0,0));
+		}else if(currScene == 1){ //Isometric camera
+            M = glm::mat4(1.0f / 10.0f, 0, 0, 0,
+                  0, -4.0f / 30.0f, 0, 0,
+                  0, 0, 1.0f/(-500.0f-500.0f), 0,
+                  0, 0, -500.0f/(-500.0f-500.0f), 1)*
+                glm::mat4(1, 0, 0, 0,
+                  0, glm::cos(glm::radians(-35.26f)), -glm::sin(glm::radians(-35.26f)), 0,
+                  0, glm::sin(glm::radians(-35.26f)), glm::cos(glm::radians(-35.26f)), 0,
+                  0, 0, 0, 1) *
+                glm::mat4(glm::cos(glm::radians(-45.0f)), 0, -glm::sin(glm::radians(-45.0f)), 0,
+                  0, 1, 0, 0,
+                  glm::sin(glm::radians(-45.0f)), 0, glm::cos(glm::radians(-45.0f)), 0,
+                  0, 0, 0, 1);
             Mv =  glm::inverse(
 							glm::translate(glm::mat4(1), ScooterPos) *
 							glm::rotate(glm::mat4(1), DlookAng, glm::vec3(0,1,0))
@@ -1331,41 +991,23 @@ protected:
         DSsun.map(currentImage, &emissionUbo, 0);
 
 // **A10** Add to compute the uniforms and pass them to the shaders. You need two uniforms: one for the matrices, and the other for the material parameters.
-        ScooterMatricesUniformBufferObject ScooterUbo{};
-        ScooterParametersUniformBufferObject ScooterParUbo{};
+        SingleObjectMatricesUniformBufferObject ScooterUbo{};
+        ObjectParametersUniformBufferObject ScooterParUbo{};
 
-        CityMatricesUniformBufferObject CityUbo{};
-        CityParametersUniformBufferObject CityParUbo{};
+        SingleObjectMatricesUniformBufferObject CityUbo{};
+        ObjectParametersUniformBufferObject CityParUbo{};
 
-        PizzeriaMatricesUniformBufferObject PizzeriaUbo{};
-        PizzeriaParametersUniformBufferObject PizzeriaParUbo{};
+        SingleObjectMatricesUniformBufferObject PizzeriaUbo{};
+        ObjectParametersUniformBufferObject PizzeriaParUbo{};
 
-        SkyScraper1MatricesUniformBufferObject SkyScraper1Ubo{};
-        SkyScraper1ParametersUniformBufferObject SkyScraper1ParUbo{};
+        SkyScraperMatricesUniformBufferObject skyScraperUbos[4]{};
+        ObjectParametersUniformBufferObject skyScraperParamUbos[4]{};
 
-        SkyScraper2MatricesUniformBufferObject SkyScraper2Ubo{};
-        SkyScraper2ParametersUniformBufferObject SkyScraper2ParUbo{};
-
-        SkyScraper3MatricesUniformBufferObject SkyScraper3Ubo{};
-        SkyScraper3ParametersUniformBufferObject SkyScraper3ParUbo{};
-
-        SkyScraper4MatricesUniformBufferObject SkyScraper4Ubo{};
-        SkyScraper4ParametersUniformBufferObject SkyScraper4ParUbo{};
-
-        Tree1MatricesUniformBufferObject Tree1Ubo{};
-        Tree1ParametersUniformBufferObject Tree1ParUbo{};
-
-        Tree2MatricesUniformBufferObject Tree2Ubo{};
-        Tree2ParametersUniformBufferObject Tree2ParUbo{};
-
-        Tree3MatricesUniformBufferObject Tree3Ubo{};
-        Tree3ParametersUniformBufferObject Tree3ParUbo{};
-
-        Tree4MatricesUniformBufferObject Tree4Ubo{};
-        Tree4ParametersUniformBufferObject Tree4ParUbo{};
+        TreeMatricesUniformBufferObject treeUbos[4]{};               // Array di UBO per gli alberi
+        ObjectParametersUniformBufferObject treeParamUbos[4]{};     // Array di parametri per gli alberi
 
         LampPostMatricesUniformBufferObject LampPostUbo{};
-        LampPostParametersUniformBufferObject LampPostParUbo{};
+        ObjectParametersUniformBufferObject LampPostParUbo{};
 
         skyBoxUniformBufferObject SkyBoxUbo{};
 
@@ -1396,107 +1038,46 @@ protected:
 
 
         int currentIndex = -1;
-        int counterSkyScraper1 = 0;
-        int counterSkyScraper2 = 0;
-        int counterSkyScraper3 = 0;
-        int counterSkyScraper4 = 0;
-        for (int i = 0; i < NSKYSCRAPER * 4; i++) {
+        int counterSkyScraper[4] = {0, 0, 0, 0}; // Array di contatori
 
-            for(int j = 0; j < NSKYSCRAPER; j++)
-            {
-                if(indicesSkyScraper1[j] == i)
-                {
+        for (int i = 0; i < NSKYSCRAPER * 4; i++) {
+            for (int j = 0; j < NSKYSCRAPER; j++) {
+                if (indicesSkyScraper1[j] == i) {
+                    currentIndex = 0;
+                } else if (indicesSkyScraper2[j] == i) {
                     currentIndex = 1;
-                }
-                else if(indicesSkyScraper2[j] == i)
-                {
+                } else if (indicesSkyScraper3[j] == i) {
                     currentIndex = 2;
-                }
-                else if(indicesSkyScraper3[j] == i)
-                {
+                } else if (indicesSkyScraper4[j] == i) {
                     currentIndex = 3;
-                }
-                else if(indicesSkyScraper4[j] == i)
-                {
-                    currentIndex = 4;
                 }
             }
 
-            // If the tile is the one of the pizzeria
-            if(i == 28)
-            {
+            // Escludi la tile della pizzeria
+            if (i == 28) {
                 currentIndex = -1;
             }
 
-            if(currentIndex == 1) {
+            if (currentIndex != -1) {
                 // Aggiorna la matrice del modello per il grattacielo corrente
-                SkyScraper1Ubo.mMat[counterSkyScraper1] = glm::translate(glm::mat4(1.0f),
-                                                        glm::vec3(84.0 - (24.0 * (i % 8)), 0.0, 84 - (24 * (i / 8))));
+                skyScraperUbos[currentIndex].mMat[counterSkyScraper[currentIndex]] = glm::translate(glm::mat4(1.0f),
+                                                                                                    glm::vec3(84.0 - (24.0 * (i % 8)), 0.0, 84 - (24 * (i / 8))));
 
-                SkyScraper1Ubo.mMat[counterSkyScraper1] = glm::rotate(SkyScraper1Ubo.mMat[counterSkyScraper1],
-                                                                      glm::radians(90.0f * (float)(i % 4)), // Angolo in gradi
-                                                                      glm::vec3(0.0f, 1.0f, 0.0f)); // Asse Y
+                skyScraperUbos[currentIndex].mMat[counterSkyScraper[currentIndex]] = glm::rotate(
+                        skyScraperUbos[currentIndex].mMat[counterSkyScraper[currentIndex]],
+                        glm::radians(90.0f * (float)(i % 4)), // Angolo in gradi
+                        glm::vec3(0.0f, 1.0f, 0.0f));         // Asse Y
 
                 // Calcola la matrice MVP per il grattacielo corrente
-                SkyScraper1Ubo.mvpMat[counterSkyScraper1] = ViewPrj * SkyScraper1Ubo.mMat[counterSkyScraper1];
+                skyScraperUbos[currentIndex].mvpMat[counterSkyScraper[currentIndex]] =
+                        ViewPrj * skyScraperUbos[currentIndex].mMat[counterSkyScraper[currentIndex]];
 
                 // Calcola la matrice normale per il grattacielo corrente
-                SkyScraper1Ubo.nMat[counterSkyScraper1] = glm::inverse(glm::transpose(SkyScraper1Ubo.mMat[counterSkyScraper1]));
+                skyScraperUbos[currentIndex].nMat[counterSkyScraper[currentIndex]] =
+                        glm::inverse(glm::transpose(skyScraperUbos[currentIndex].mMat[counterSkyScraper[currentIndex]]));
 
-                counterSkyScraper1++;
-            }
-            else if(currentIndex == 2)
-            {
-                // Aggiorna la matrice del modello per il grattacielo corrente
-                SkyScraper2Ubo.mMat[counterSkyScraper2] = glm::translate(glm::mat4(1.0f),
-                                                        glm::vec3(84.0 - (24.0 * (i % 8)), 0.0, 84 - (24 * (i / 8))));
-
-                SkyScraper1Ubo.mMat[counterSkyScraper2] = glm::rotate(SkyScraper2Ubo.mMat[counterSkyScraper2],
-                                                                      glm::radians(90.0f * (float)(i % 4)), // Angolo in gradi
-                                                                      glm::vec3(0.0f, 1.0f, 0.0f)); // Asse Y
-                // Calcola la matrice MVP per il grattacielo corrente
-                SkyScraper2Ubo.mvpMat[counterSkyScraper2] = ViewPrj * SkyScraper2Ubo.mMat[counterSkyScraper2];
-
-                // Calcola la matrice normale per il grattacielo corrente
-                SkyScraper2Ubo.nMat[counterSkyScraper2] = glm::inverse(glm::transpose(SkyScraper2Ubo.mMat[counterSkyScraper2]));
-
-                counterSkyScraper2++;
-            }
-            else if(currentIndex == 3)
-            {
-                // Aggiorna la matrice del modello per il grattacielo corrente
-                SkyScraper3Ubo.mMat[counterSkyScraper3] = glm::translate(glm::mat4(1.0f),
-                                                        glm::vec3(84.0 - (24.0 * (i % 8)), 0.0, 84 - (24 * (i / 8))));
-
-                SkyScraper3Ubo.mMat[counterSkyScraper1] = glm::rotate(SkyScraper3Ubo.mMat[counterSkyScraper3],
-                                                                      glm::radians(90.0f * (float)(i % 4)), // Angolo in gradi
-                                                                      glm::vec3(0.0f, 1.0f, 0.0f)); // Asse Y
-
-                // Calcola la matrice MVP per il grattacielo corrente
-                SkyScraper3Ubo.mvpMat[counterSkyScraper3] = ViewPrj * SkyScraper3Ubo.mMat[counterSkyScraper3];
-
-                // Calcola la matrice normale per il grattacielo corrente
-                SkyScraper3Ubo.nMat[counterSkyScraper3] = glm::inverse(glm::transpose(SkyScraper3Ubo.mMat[counterSkyScraper3]));
-
-                counterSkyScraper3++;
-            }
-            else if(currentIndex == 4)
-            {
-                // Aggiorna la matrice del modello per il grattacielo corrente
-                SkyScraper4Ubo.mMat[counterSkyScraper4] = glm::translate(glm::mat4(1.0f),
-                                                        glm::vec3(84.0 - (24.0 * (i % 8)), 0.0, 84 - (24 * (i / 8))));
-
-                SkyScraper4Ubo.mMat[counterSkyScraper4] = glm::rotate(SkyScraper4Ubo.mMat[counterSkyScraper4],
-                                                                      glm::radians(90.0f * (float)(i % 4)), // Angolo in gradi
-                                                                      glm::vec3(0.0f, 1.0f, 0.0f)); // Asse Y
-
-                // Calcola la matrice MVP per il grattacielo corrente
-                SkyScraper4Ubo.mvpMat[counterSkyScraper4] = ViewPrj * SkyScraper4Ubo.mMat[counterSkyScraper4];
-
-                // Calcola la matrice normale per il grattacielo corrente
-                SkyScraper4Ubo.nMat[counterSkyScraper4] = glm::inverse(glm::transpose(SkyScraper4Ubo.mMat[counterSkyScraper4]));
-
-                counterSkyScraper4++;
+                // Incrementa il contatore
+                counterSkyScraper[currentIndex]++;
             }
         }
 
@@ -1521,133 +1102,42 @@ protected:
             LampPostUbo.nMat[i * 4 + 3] = glm::inverse(glm::transpose(LampPostUbo.mMat[i * 4 + 3]));
         }
 
+
         currentIndex = -1;
         int offset = 6;
-        int counterTree1 = 0;
-        int counterTree2 = 0;
-        int counterTree3 = 0;
-        int counterTree4 = 0;
-        for (int i = 0; i < 64; i++) {
+        int counterTree[4] = {0, 0, 0, 0};                          // Contatori per ciascun albero
+        int* indicesTree[4] = {indicesTree1, indicesTree2, indicesTree3, indicesTree4}; // Indici
 
-            for(int j = 0; j < 16; j++)
-            {
-                if(indicesTree1[j] == i)
-                {
-                    currentIndex = 1;
+        for (int i = 0; i < 64; ++i) {
+            currentIndex = -1;
+
+            // Determina l'indice dell'albero corrente
+            for (int j = 0; j < 4; ++j) {
+                for (int k = 0; k < 16; ++k) {
+                    if (indicesTree[j][k] == i) {
+                        currentIndex = j;
+                        break;
+                    }
                 }
-                else if(indicesTree2[j] == i)
-                {
-                    currentIndex = 2;
-                }
-                else if(indicesTree3[j] == i)
-                {
-                    currentIndex = 3;
-                }
-                else if(indicesTree4[j] == i)
-                {
-                    currentIndex = 4;
-                }
+                if (currentIndex != -1) break;
             }
 
-            if(i == 28)
-            {
+            // Escludi la tile della pizzeria
+            if (i == 28) {
                 currentIndex = -1;
             }
 
-            if(currentIndex == 1) {
-                Tree1Ubo.mMat[counterTree1 * 4] = glm::translate(glm::mat4(1.0f), glm::vec3(75 - (24 * ((i) % 8)), 0.0, 85 - offset - (24 * ((i) / 8))));
-                Tree1Ubo.mMat[counterTree1 * 4] = glm::scale(Tree1Ubo.mMat[counterTree1 * 4], glm::vec3(0.5f, 0.5f, 0.5f));
-                Tree1Ubo.mvpMat[counterTree1 * 4] = ViewPrj * Tree1Ubo.mMat[counterTree1 * 4];
-                Tree1Ubo.nMat[counterTree1 * 4] = glm::inverse(glm::transpose(Tree1Ubo.mMat[counterTree1 * 4]));
-
-                Tree1Ubo.mMat[counterTree1 * 4 + 1] = glm::translate(glm::mat4(1.0f), glm::vec3(84 + offset - (24 * ((i) % 8)), 0.0, 75 - (24 * ((i) / 8))));
-                Tree1Ubo.mMat[counterTree1 * 4 + 1] = glm::scale(Tree1Ubo.mMat[counterTree1 * 4 + 1], glm::vec3(0.5f, 0.5f, 0.5f));
-                Tree1Ubo.mvpMat[counterTree1 * 4 + 1] = ViewPrj * Tree1Ubo.mMat[counterTree1 * 4 + 1];
-                Tree1Ubo.nMat[counterTree1 * 4 + 1] = glm::inverse(glm::transpose(Tree1Ubo.mMat[counterTree1 * 4 + 1]));
-
-                Tree1Ubo.mMat[counterTree1 * 4 + 2] = glm::translate(glm::mat4(1.0f), glm::vec3(93 - (24 * ((i) % 8)), 0.0, 85 + offset - (24 * ((i) / 8))));
-                Tree1Ubo.mMat[counterTree1 * 4 + 2] = glm::scale(Tree1Ubo.mMat[counterTree1 * 4 + 2], glm::vec3(0.5f, 0.5f, 0.5f));
-                Tree1Ubo.mvpMat[counterTree1 * 4 + 2] = ViewPrj * Tree1Ubo.mMat[counterTree1 * 4 + 2];
-                Tree1Ubo.nMat[counterTree1 * 4 + 2] = glm::inverse(glm::transpose(Tree1Ubo.mMat[counterTree1 * 4 + 2]));
-
-                Tree1Ubo.mMat[counterTree1 * 4 + 3] = glm::translate(glm::mat4(1.0f), glm::vec3(84 - offset - (24 * ((i) % 8)), 0.0, 93 - (24 * ((i) / 8))));
-                Tree1Ubo.mMat[counterTree1 * 4 + 3] = glm::scale(Tree1Ubo.mMat[counterTree1 * 4 + 3], glm::vec3(0.5f, 0.5f, 0.5f));
-                Tree1Ubo.mvpMat[counterTree1 * 4 + 3] = ViewPrj * Tree1Ubo.mMat[counterTree1 * 4 + 3];
-                Tree1Ubo.nMat[counterTree1 * 4 + 3] = glm::inverse(glm::transpose(Tree1Ubo.mMat[counterTree1 * 4 + 3]));
-
-                counterTree1++;
-            }
-            else if(currentIndex == 2)
-            {
-                Tree2Ubo.mMat[counterTree2 * 4] = glm::translate(glm::mat4(1.0f), glm::vec3(75 - (24 * ((i) % 8)), 0.0, 85 - offset - (24 * ((i) / 8))));
-                Tree2Ubo.mvpMat[counterTree2 * 4] = ViewPrj * Tree2Ubo.mMat[counterTree2 * 4];
-                Tree2Ubo.nMat[counterTree2 * 4] = glm::inverse(glm::transpose(Tree2Ubo.mMat[counterTree2 * 4]));
-
-                Tree2Ubo.mMat[counterTree2 * 4 + 1] = glm::translate(glm::mat4(1.0f), glm::vec3(84 + offset - (24 * ((i) % 8)), 0.0, 75 - (24 * ((i) / 8))));
-                Tree2Ubo.mvpMat[counterTree2 * 4 + 1] = ViewPrj * Tree2Ubo.mMat[counterTree2 * 4 + 1];
-                Tree2Ubo.nMat[counterTree2 * 4 + 1] = glm::inverse(glm::transpose(Tree2Ubo.mMat[counterTree2 * 4 + 1]));
-
-                Tree2Ubo.mMat[counterTree2 * 4 + 2] = glm::translate(glm::mat4(1.0f), glm::vec3(93 - (24 * ((i) % 8)), 0.0, 85 + offset - (24 * ((i) / 8))));
-                Tree2Ubo.mvpMat[counterTree2 * 4 + 2] = ViewPrj * Tree2Ubo.mMat[counterTree2 * 4 + 2];
-                Tree2Ubo.nMat[counterTree2 * 4 + 2] = glm::inverse(glm::transpose(Tree2Ubo.mMat[counterTree2 * 4 + 2]));
-
-                Tree2Ubo.mMat[counterTree2 * 4 + 3] = glm::translate(glm::mat4(1.0f), glm::vec3(84 - offset - (24 * ((i) % 8)), 0.0, 93 - (24 * ((i) / 8))));
-                Tree2Ubo.mvpMat[counterTree2 * 4 + 3] = ViewPrj * Tree2Ubo.mMat[counterTree2 * 4 + 3];
-                Tree2Ubo.nMat[counterTree2 * 4 + 3] = glm::inverse(glm::transpose(Tree2Ubo.mMat[counterTree2 * 4 + 3]));
-
-                counterTree2++;
-            }
-            else if(currentIndex == 3)
-            {
-                Tree3Ubo.mMat[counterTree3 * 4] = glm::translate(glm::mat4(1.0f), glm::vec3(75 - (24 * ((i) % 8)), 0.0, 85 - offset - (24 * ((i) / 8))));
-                Tree3Ubo.mvpMat[counterTree3 * 4] = ViewPrj * Tree3Ubo.mMat[counterTree3 * 4];
-                Tree3Ubo.nMat[counterTree3 * 4] = glm::inverse(glm::transpose(Tree3Ubo.mMat[counterTree3 * 4]));
-
-                Tree3Ubo.mMat[counterTree3 * 4 + 1] = glm::translate(glm::mat4(1.0f), glm::vec3(84 + offset - (24 * ((i) % 8)), 0.0, 75 - (24 * ((i) / 8))));
-                Tree3Ubo.mvpMat[counterTree3 * 4 + 1] = ViewPrj * Tree3Ubo.mMat[counterTree3 * 4 + 1];
-                Tree3Ubo.nMat[counterTree3 * 4 + 1] = glm::inverse(glm::transpose(Tree3Ubo.mMat[counterTree3 * 4 + 1]));
-
-                Tree3Ubo.mMat[counterTree3 * 4 + 2] = glm::translate(glm::mat4(1.0f), glm::vec3(93 - (24 * ((i) % 8)), 0.0, 85 + offset - (24 * ((i) / 8))));
-                Tree3Ubo.mvpMat[counterTree3 * 4 + 2] = ViewPrj * Tree3Ubo.mMat[counterTree3 * 4 + 2];
-                Tree3Ubo.nMat[counterTree3 * 4 + 2] = glm::inverse(glm::transpose(Tree3Ubo.mMat[counterTree3 * 4 + 2]));
-
-                Tree3Ubo.mMat[counterTree3 * 4 + 3] = glm::translate(glm::mat4(1.0f), glm::vec3(84 - offset - (24 * ((i) % 8)), 0.0, 93 - (24 * ((i) / 8))));
-                Tree3Ubo.mvpMat[counterTree3 * 4 + 3] = ViewPrj * Tree3Ubo.mMat[counterTree3 * 4 + 3];
-                Tree3Ubo.nMat[counterTree3 * 4 + 3] = glm::inverse(glm::transpose(Tree3Ubo.mMat[counterTree3 * 4 + 3]));
-
-                counterTree3++;
-            }
-            else if(currentIndex == 4)
-            {
-                // Aggiorna la matrice del modello per ciascun albero e applica la scala
-                Tree4Ubo.mMat[counterTree4 * 4] = glm::translate(glm::mat4(1.0f), glm::vec3(75 - (24 * ((i) % 8)), 0.0, 85 - offset - (24 * ((i) / 8))));
-                Tree4Ubo.mMat[counterTree4 * 4] = glm::scale(Tree4Ubo.mMat[counterTree4 * 4], glm::vec3(0.5f, 0.5f, 0.5f));
-                Tree4Ubo.mvpMat[counterTree4 * 4] = ViewPrj * Tree4Ubo.mMat[counterTree4 * 4];
-                Tree4Ubo.nMat[counterTree4 * 4] = glm::inverse(glm::transpose(Tree4Ubo.mMat[counterTree4 * 4]));
-
-                Tree4Ubo.mMat[counterTree4 * 4 + 1] = glm::translate(glm::mat4(1.0f), glm::vec3(84 + offset - (24 * ((i) % 8)), 0.0, 75 - (24 * ((i) / 8))));
-                Tree4Ubo.mMat[counterTree4 * 4 + 1] = glm::scale(Tree4Ubo.mMat[counterTree4 * 4 + 1], glm::vec3(0.5f, 0.5f, 0.5f));
-                Tree4Ubo.mvpMat[counterTree4 * 4 + 1] = ViewPrj * Tree4Ubo.mMat[counterTree4 * 4 + 1];
-                Tree4Ubo.nMat[counterTree4 * 4 + 1] = glm::inverse(glm::transpose(Tree4Ubo.mMat[counterTree4 * 4 + 1]));
-
-                Tree4Ubo.mMat[counterTree4 * 4 + 2] = glm::translate(glm::mat4(1.0f), glm::vec3(93 - (24 * ((i) % 8)), 0.0, 85 + offset - (24 * ((i) / 8))));
-                Tree4Ubo.mMat[counterTree4 * 4 + 2] = glm::scale(Tree4Ubo.mMat[counterTree4 * 4 + 2], glm::vec3(0.5f, 0.5f, 0.5f));
-                Tree4Ubo.mvpMat[counterTree4 * 4 + 2] = ViewPrj * Tree4Ubo.mMat[counterTree4 * 4 + 2];
-                Tree4Ubo.nMat[counterTree4 * 4 + 2] = glm::inverse(glm::transpose(Tree4Ubo.mMat[counterTree4 * 4 + 2]));
-
-                Tree4Ubo.mMat[counterTree4 * 4 + 3] = glm::translate(glm::mat4(1.0f), glm::vec3(84 - offset - (24 * ((i) % 8)), 0.0, 93 - (24 * ((i) / 8))));
-                Tree4Ubo.mMat[counterTree4 * 4 + 3] = glm::scale(Tree4Ubo.mMat[counterTree4 * 4 + 3], glm::vec3(0.5f, 0.5f, 0.5f));
-                Tree4Ubo.mvpMat[counterTree4 * 4 + 3] = ViewPrj * Tree4Ubo.mMat[counterTree4 * 4 + 3];
-                Tree4Ubo.nMat[counterTree4 * 4 + 3] = glm::inverse(glm::transpose(Tree4Ubo.mMat[counterTree4 * 4 + 3]));
-
-
-                counterTree4++;
+            // Aggiorna le matrici dell'albero corrente, applicando la scala solo per Tree1 e Tree4
+            if (currentIndex != -1) {
+                bool applyScale = (currentIndex == 0 || currentIndex == 3); // Scala solo per Tree1 e Tree4
+                updateTreeMatrices(&treeUbos[currentIndex], counterTree[currentIndex], i, offset, ViewPrj, applyScale);
             }
         }
 
+
         float SkyBox_scale_factor = 98.0f;
 
-// Traslazione verso l'origine per centrare la SkyBox
+        // Traslazione verso l'origine per centrare la SkyBox
         glm::vec3 skybox_center_offset = glm::vec3(0, 3, -5); // Sostituisci con i valori corretti per centrare la SkyBox
 
         SkyBoxUbo.mvpMat = M * glm::mat4(glm::mat3(ViewMatrix))
@@ -1661,21 +1151,15 @@ protected:
 
         DSPizzeria.map(currentImage, &PizzeriaUbo, 0);
 
-        DSSkyScraper1.map(currentImage, &SkyScraper1Ubo, 0);
+        for(int i = 0; i < 4; i++)
+        {
+            DSSkyScraper[i].map(currentImage, &skyScraperUbos[i], 0);
+        }
 
-        DSSkyScraper2.map(currentImage, &SkyScraper2Ubo, 0);
-
-        DSSkyScraper3.map(currentImage, &SkyScraper3Ubo, 0);
-
-        DSSkyScraper4.map(currentImage, &SkyScraper4Ubo, 0);
-
-        DSTree1.map(currentImage, &Tree1Ubo, 0);
-
-        DSTree2.map(currentImage, &Tree2Ubo, 0);
-
-        DSTree3.map(currentImage, &Tree3Ubo, 0);
-
-        DSTree4.map(currentImage, &Tree4Ubo, 0);
+        for(int i = 0; i < 4; i++)
+        {
+            DSTree[i].map(currentImage, &treeUbos[i], 0);
+        }
 
         DSLampPost.map(currentImage, &LampPostUbo, 0);
 
@@ -1690,15 +1174,14 @@ protected:
 
         PizzeriaParUbo.Pow = 200.0f;
 
-        SkyScraper1ParUbo.Pow = 200.0f;
-        SkyScraper2ParUbo.Pow = 200.0f;
-        SkyScraper3ParUbo.Pow = 200.0f;
-        SkyScraper4ParUbo.Pow = 200.0f;
+        for (int i = 0; i < 4; ++i) {
+            skyScraperParamUbos[i].Pow = 200.0f;
+        }
 
-        Tree1ParUbo.Pow = 200.0f;
-        Tree2ParUbo.Pow = 200.0f;
-        Tree3ParUbo.Pow = 200.0f;
-        Tree4ParUbo.Pow = 200.0f;
+        for (int i = 0; i < 4; ++i) {
+            treeParamUbos[i].Pow = 200.0f;
+        }
+
 
         LampPostParUbo.Pow = 200.0f;
 
@@ -1711,15 +1194,14 @@ protected:
 
         PizzeriaParUbo.Ang = 0.0f;
 
-        SkyScraper1ParUbo.Ang = 0.0f;
-        SkyScraper2ParUbo.Ang = 0.0f;
-        SkyScraper3ParUbo.Ang = 0.0f;
-        SkyScraper4ParUbo.Ang = 0.0f;
+        for (int i = 0; i < 4; ++i) {
+            skyScraperParamUbos[i].Ang = 0.0f;
+        }
 
-        Tree1ParUbo.Ang = 0.0f;
-        Tree2ParUbo.Ang = 0.0f;
-        Tree3ParUbo.Ang = 0.0f;
-        Tree4ParUbo.Ang = 0.0f;
+        for (int i = 0; i < 4; ++i) {
+            treeParamUbos[i].Ang = 0.0f;
+        }
+
 
         LampPostParUbo.Ang = 0.0f;
 
@@ -1730,15 +1212,15 @@ protected:
 
         DSPizzeria.map(currentImage, &PizzeriaParUbo, 2);
 
-        DSSkyScraper1.map(currentImage, &SkyScraper1ParUbo, 2);
-        DSSkyScraper2.map(currentImage, &SkyScraper2ParUbo, 2);
-        DSSkyScraper3.map(currentImage, &SkyScraper3ParUbo, 2);
-        DSSkyScraper4.map(currentImage, &SkyScraper4ParUbo, 2);
+        for(int i = 0; i < 4; i++)
+        {
+            DSSkyScraper[i].map(currentImage, &skyScraperParamUbos[i], 2);
+        }
 
-        DSTree1.map(currentImage, &Tree1ParUbo, 2);
-        DSTree2.map(currentImage, &Tree2ParUbo, 2);
-        DSTree3.map(currentImage, &Tree3ParUbo, 2);
-        DSTree4.map(currentImage, &SkyScraper4ParUbo, 2);
+        for(int i = 0; i < 4; i++)
+        {
+            DSTree[i].map(currentImage, &treeParamUbos[i], 2);
+        }
 
         DSLampPost.map(currentImage, &LampPostParUbo, 2);
 
