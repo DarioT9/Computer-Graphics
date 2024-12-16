@@ -529,7 +529,7 @@ protected:
         PScooter.init(this, &VDScooter, "shaders/NormalMapVert.spv", "shaders/NormalMapFrag.spv",
                       {&DSLGlobal, &DSLScooter});
         PCity.init(this, &VDCity, "shaders/NormalMapVert.spv", "shaders/CityFrag.spv", {&DSLGlobal, &DSLCity});
-        PSoil.init(this, &VDSoil, "shaders/NormalMapVert.spv", "shaders/CityFrag.spv", {&DSLGlobal, &DSLSoil});
+        PSoil.init(this, &VDSoil, "shaders/NormalMapVert.spv", "shaders/SoilFrag.spv", {&DSLGlobal, &DSLSoil});
         PPizzeria.init(this, &VDPizzeria, "shaders/NormalMapVert.spv", "shaders/PizzeriaFrag.spv",
                        {&DSLGlobal, &DSLPizzeria});
         for (int i = 0; i < 4; i++) {
@@ -550,7 +550,7 @@ protected:
         // The models include different objects such as scooter, city, soil, pizzeria, skyscrapers, trees, lamp post, and the skybox.
         MScooter.init(this, &VDScooter, "models/Scooter.obj", OBJ);
         MCity.init(this, &VDCity, "models/road.obj", OBJ);
-        MSoil.init(this, &VDSoil, "models/soil.obj", OBJ);
+        MSoil.init(this, &VDSoil, "models/sand3.obj", OBJ);
         MPizzeria.init(this, &VDPizzeria, "models/Pizzeria/pizzeria.obj", OBJ);
         const char *modelPaths[4] = {
                 "models/apartment_1.mgcg",
@@ -592,7 +592,15 @@ protected:
 
         TCity.init(this, "textures/city/road.png");
 
-        TSoil.init(this, "textures/city/croppedSoil.jpg");
+//        // Initialize the Soil texture with the custom sampler
+//        VkSampler soilSampler = setSoilTexture();
+//        TSoil.init(this, "textures/city/newSand.png");
+
+        // Initialize the Soil texture with the image file
+        TSoil.init(this, "textures/city/newSand.png", VK_FORMAT_R8G8B8A8_SRGB, false);
+        // Configure the Soil texture sampler for mirrored repeat wrapping
+        TSoil.createTextureSampler();
+
 
         TPizzeria.init(this, "textures/pizzeria/TPizzeria.jpeg");
 
@@ -605,7 +613,7 @@ protected:
 
         TLampPost.init(this, "textures/Textures_Skyscrapers.png");
 
-        TskyBox.init(this, "textures/starMap/starmap_g4k.jpg");
+        TskyBox.init(this, "textures/nightSkybox.jpg");
 
         Tsun.init(this, "textures/sun/2k_sun.jpg");
 
@@ -1117,7 +1125,7 @@ protected:
         CityUbo.nMat = glm::mat4(1.0f); // Sets identity normal matrix for the city
         CityUbo.mvpMat = ViewPrj; // Sets MVP matrix for the city
 
-        SoilUbo.mMat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.001f, 0.0f)); // Applies a slight downward translation
+        SoilUbo.mMat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.01f, 0.0f)); // Applies a slight downward translation
         SoilUbo.nMat = glm::mat4(1.0f); // Sets identity normal matrix for the soil
         SoilUbo.mvpMat = ViewPrj * SoilUbo.mMat; // Updates MVP matrix with the transformation
 
@@ -1252,7 +1260,7 @@ protected:
 
         // Sets the scale factor for the SkyBox and adjusts its translation to center it in the scene
 //        float SkyBox_scale_factor = 98.0f;
-        float SkyBox_scale_factor = 200.0f;
+        float SkyBox_scale_factor = 500.0f;
         glm::vec3 skybox_center_offset = glm::vec3(0, 3, -5); // Adjust the translation values to center the SkyBox
 
         // Sets up the model-view-projection matrix for the SkyBox with scaling and translation
