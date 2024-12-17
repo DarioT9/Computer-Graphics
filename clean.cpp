@@ -6,6 +6,13 @@
 
 #include <thread>
 #include <chrono>
+#include <algorithm>
+#include <random>
+#include <set>
+
+#define TOTAL_TILES 64
+#define NSKYSCRAPER 16
+#define NTREE 64
 
 #define PI 3.14159265359
 
@@ -35,13 +42,6 @@ struct SingleObjectMatricesUniformBufferObject {
     alignas(16) glm::mat4 nMat;   // Normal matrix
 };
 
-#define NSKYSCRAPER 16
-// Arrays holding indices for each skyscraper model
-int indicesSkyScraper1[NSKYSCRAPER] = {3, 15, 8, 30, 12, 5, 26, 1, 9, 16, 22, 37, 40, 49, 61};
-int indicesSkyScraper2[NSKYSCRAPER] = {2, 6, 10, 18, 20, 25, 33, 41, 45, 50, 52, 53, 54, 56, 58, 60};
-int indicesSkyScraper3[NSKYSCRAPER] = {4, 7, 11, 14, 19, 21, 23, 29, 31, 32, 34, 39, 42, 44, 47, 48};
-int indicesSkyScraper4[NSKYSCRAPER] = {0, 9, 13, 17, 24, 27, 35, 36, 38, 43, 46, 51, 55, 57, 59, 62};
-
 // Struct for skyscraper matrices, including MVP, Model, and Normal matrices
 struct SkyScraperMatricesUniformBufferObject {
     alignas(16) glm::mat4 mvpMat[NSKYSCRAPER];  // Model-View-Projection matrix for each skyscraper
@@ -49,12 +49,47 @@ struct SkyScraperMatricesUniformBufferObject {
     alignas(16) glm::mat4 nMat[NSKYSCRAPER];    // Normal matrix for each skyscraper
 };
 
-#define NTREE 64
+// Global variables for the skyscrapers
+int indicesSkyScraper1[NSKYSCRAPER];
+int indicesSkyScraper2[NSKYSCRAPER];
+int indicesSkyScraper3[NSKYSCRAPER];
+int indicesSkyScraper4[NSKYSCRAPER];
+
+void generateUniqueRandomIndicesSkyscaper(int (&indices1)[NSKYSCRAPER], int (&indices2)[NSKYSCRAPER],
+                                 int (&indices3)[NSKYSCRAPER], int (&indices4)[NSKYSCRAPER]) {
+    std::vector<int> allIndices;
+
+    // Generate numbers between 0 and 63, excluding 28 (Pizzeria)
+    for (int i = 0; i < TOTAL_TILES; ++i) {
+        if (i != 28) {
+            allIndices.push_back(i);
+        }
+    }
+
+    // Shuffle the numbers
+    std::random_device rd;
+    std::mt19937 generator(rd());
+    std::shuffle(allIndices.begin(), allIndices.end(), generator);
+
+    // Distribute the numbers between the four vectors
+    for (int i = 0; i < NSKYSCRAPER; ++i) {
+        indices1[i] = allIndices[i];
+        indices2[i] = allIndices[i + NSKYSCRAPER];
+        indices3[i] = allIndices[i + 2 * NSKYSCRAPER];
+        indices4[i] = allIndices[i + 3 * NSKYSCRAPER];
+    }
+}
+
+// Initialization function
+void initializeSkyScraperIndices() {
+    generateUniqueRandomIndicesSkyscaper(indicesSkyScraper1, indicesSkyScraper2, indicesSkyScraper3, indicesSkyScraper4);
+}
+
 // Arrays holding indices for each tree model
-int indicesTree1[16] = {3, 15, 8, 30, 12, 5, 26, 1, 9, 16, 22, 28, 37, 40, 49, 61};
-int indicesTree2[16] = {2, 6, 10, 18, 20, 25, 33, 41, 45, 50, 52, 53, 54, 56, 58, 60};
-int indicesTree3[16] = {4, 7, 11, 14, 19, 21, 23, 29, 31, 32, 34, 39, 42, 44, 47, 48};
-int indicesTree4[16] = {0, 9, 13, 17, 24, 27, 35, 36, 38, 43, 46, 51, 55, 57, 59, 62};
+int indicesTree1[16];
+int indicesTree2[16];
+int indicesTree3[16];
+int indicesTree4[16];
 
 // Struct for tree matrices, including MVP, Model, and Normal matrices
 struct TreeMatricesUniformBufferObject {
@@ -62,6 +97,36 @@ struct TreeMatricesUniformBufferObject {
     alignas(16) glm::mat4 mMat[NTREE];    // Model matrix for each tree
     alignas(16) glm::mat4 nMat[NTREE];    // Normal matrix for each tree
 };
+
+// Function to generate unique random indices for the trees
+void generateUniqueTreeIndices(int* indices1, int* indices2, int* indices3, int* indices4, int numIndices) {
+    // Create a pool of numbers from 0 to 63, excluding 28
+    std::vector<int> pool;
+    for (int i = 0; i < 64; ++i) {
+        if (i != 28) {
+            pool.push_back(i);
+        }
+    }
+
+    // Shuffle the pool
+    std::random_device rd;
+    std::mt19937 g(rd());
+    std::shuffle(pool.begin(), pool.end(), g);
+
+    // Distribute the indices among the arrays
+    for (int i = 0; i < numIndices; ++i) {
+        indices1[i] = pool[i];
+        indices2[i] = pool[i + numIndices];
+        indices3[i] = pool[i + 2 * numIndices];
+        indices4[i] = pool[i + 3 * numIndices];
+    }
+}
+
+// Initialization function for trees
+void initializeTreeIndices() {
+    generateUniqueTreeIndices(indicesTree1, indicesTree2, indicesTree3, indicesTree4, NTREE);
+}
+
 
 // Function to update tree matrices, including translation, scaling, and matrix calculations
 void updateTreeMatrices(TreeMatricesUniformBufferObject* treeUbo, int& counter, int i, int offset, const glm::mat4& ViewPrj, bool applyScale) {
@@ -190,7 +255,7 @@ std::vector<ModelOffsets> calculateOffsets(const std::string& filename) {
 
 
 // MAIN
-class A10 : public BaseProject {
+class Application : public BaseProject {
 protected:
 
     // Descriptor Layouts ["classes" of what will be passed to the shaders]
@@ -295,7 +360,7 @@ protected:
         // Set the window size, title, and initial background color
         windowWidth = 800;
         windowHeight = 600;
-        windowTitle = "A10 - Adding an object"; // Window title
+        windowTitle = "Computer Graphics Project - Pizza Delivery"; // Window title
         windowResizable = GLFW_TRUE;           // Allow window resizing
         initialBackgroundColor = {0.1f, 0.1f, 0.1f, 1.0f}; // Initial background color (dark gray)
 
@@ -597,7 +662,7 @@ protected:
 //        TSoil.init(this, "textures/city/newSand.png");
 
         // Initialize the Soil texture with the image file
-        TSoil.init(this, "textures/city/newSand.png", VK_FORMAT_R8G8B8A8_SRGB, false);
+        TSoil.init(this, "textures/city/sand.jpeg", VK_FORMAT_R8G8B8A8_SRGB, false);
         // Configure the Soil texture sampler for mirrored repeat wrapping
         TSoil.createTextureSampler();
 
@@ -1404,7 +1469,12 @@ protected:
 
 // Main function: The application runs here, and any errors will be caught and displayed
 int main() {
-    A10 app;
+    Application app;
+
+    // Initialize skyscraper indices once at the start of the program
+    initializeSkyScraperIndices();
+    // Initialize tree indices once at the start of the program
+    initializeTreeIndices();
 
     try {
         app.run();  // Run the application
