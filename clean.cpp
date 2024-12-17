@@ -245,7 +245,7 @@ protected:
     Model MTree[4];                     // Models for the 4 trees
     Model MLampPost;                    // Model for the LampPost
     Model MskyBox;                      // Model for the SkyBox
-    Model Msun;                         // Model for the Sun (possibly for lighting)
+    Model Mmoon;                         // Model for the Moon (possibly for lighting)
 
     // Textures for the various objects in the scene
     Texture TScooterBaseColor, TScooterNormal, TScooterHeight, TScooterMetallic, TScooterRoughness, TScooterAmbientOcclusion; // Textures for the Scooter
@@ -256,7 +256,7 @@ protected:
     Texture TTree[4];                   // Textures for the 4 trees
     Texture TLampPost;                  // Texture for the LampPost
     Texture TskyBox;                    // Texture for the SkyBox
-    Texture Tsun;                       // Texture for the Sun
+    Texture Tmoon;                       // Texture for the Moon
 
     // Descriptor sets for the various objects
     DescriptorSet DSScooter;            // Descriptor set for the Scooter
@@ -268,7 +268,7 @@ protected:
     DescriptorSet DSTree[4];            // Descriptor sets for the 4 trees
     DescriptorSet DSLampPost;           // Descriptor set for the LampPost
     DescriptorSet DSskyBox;             // Descriptor set for the SkyBox
-    DescriptorSet DSsun;                // Descriptor set for the Sun
+    DescriptorSet DSmoon;                // Descriptor set for the Moon
 
     // Other application parameters for scene management and camera controls
     int currScene = 0;                  // Current scene index
@@ -573,10 +573,10 @@ protected:
         }
         MLampPost.init(this, &VDLampPost, "models/lamppost.mgcg", MGCG);
         MskyBox.init(this, &VDskyBox, "models/SkyBoxCube.obj", OBJ);
-        Msun.init(this, &VDEmission, "models/Sphere.obj", OBJ);
+        Mmoon.init(this, &VDEmission, "models/Sphere.obj", OBJ);
 
         // Load textures for various objects. Each texture is initialized with the respective file path.
-        // This includes textures for the scooter, city, soil, pizzeria, skyscrapers, trees, lamp post, skybox, and the sun.
+        // This includes textures for the scooter, city, soil, pizzeria, skyscrapers, trees, lamp post, skybox, and the moon.
         TScooterBaseColor.init(this, "textures/scooter/new/KR51BaseColor.png");
 
         // Normal map initialization with a special feature to support normal mapping.
@@ -607,7 +607,7 @@ protected:
 
         TskyBox.init(this, "textures/starMap/starmap_g4k.jpg");
 
-        Tsun.init(this, "textures/sun/2k_sun.jpg");
+        Tmoon.init(this, "textures/moon/moonmap.jpg");
 
         // Set up descriptor pool sizes based on the number of uniform blocks, textures, and descriptor sets required for the scene.
         DPSZs.uniformBlocksInPool =
@@ -661,7 +661,7 @@ protected:
         }
         DSLampPost.init(this, &DSLLampPost, {&TLampPost});
         DSskyBox.init(this, &DSLskyBox, {&TskyBox});
-        DSsun.init(this, &DSLEmission, {&Tsun});
+        DSmoon.init(this, &DSLEmission, {&Tmoon});
 
         DSGlobal.init(this, &DSLGlobal, {});
     }
@@ -704,7 +704,7 @@ protected:
         }
         DSLampPost.cleanup();
         DSskyBox.cleanup();
-        DSsun.cleanup();
+        DSmoon.cleanup();
     }
 
     // This function handles the cleanup of models, textures, and Descriptor Set Layouts.
@@ -754,9 +754,9 @@ protected:
         TskyBox.cleanup();
         MskyBox.cleanup();
 
-        // Clean up texture and model resources for the sun.
-        Tsun.cleanup();
-        Msun.cleanup();
+        // Clean up texture and model resources for the moon.
+        Tmoon.cleanup();
+        Mmoon.cleanup();
 
         // Clean up the global descriptor set layout.
         DSLGlobal.cleanup();
@@ -886,13 +886,13 @@ protected:
         vkCmdDrawIndexed(commandBuffer,
                          static_cast<uint32_t>(MskyBox.indices.size()), 1, 0, 0, 0);
 
-        // Binding the pipeline and model for the sun.
+        // Binding the pipeline and model for the moon.
         PEmission.bind(commandBuffer);
-        Msun.bind(commandBuffer);
-        DSsun.bind(commandBuffer, PEmission, 0, currentImage);
-        // Draw the sun.
+        Mmoon.bind(commandBuffer);
+        DSmoon.bind(commandBuffer, PEmission, 0, currentImage);
+        // Draw the moon.
         vkCmdDrawIndexed(commandBuffer,
-                         static_cast<uint32_t>(Msun.indices.size()), 1, 0, 0, 0);
+                         static_cast<uint32_t>(Mmoon.indices.size()), 1, 0, 0, 0);
 
         // Binding the pipeline and model for the pizzeria.
         PPizzeria.bind(commandBuffer);                // Pipeline for the pizzeria
@@ -1075,14 +1075,14 @@ protected:
         // Updates the global uniforms
         GlobalUniformBufferObject gubo{};
         gubo.lightDir = glm::vec3(-1.0f, 1.0f, 1.0f);  // Sets light direction
-        gubo.lightColor = glm::vec4(1.0f);                // Sets light color
+        gubo.lightColor = glm::vec4(0.8f, 0.8f, 1.0f, 1.0f); // Color of the moon
         gubo.eyePos = glm::vec3(glm::inverse(ViewMatrix) * glm::vec4(0, 3, 0, 1)); // Sets eye position
         DSGlobal.map(currentImage, &gubo, 0); // Maps the global uniform buffer object
 
         EmissionUniformBufferObject emissionUbo{};
-        emissionUbo.mvpMat = ViewPrj * glm::translate(glm::mat4(1), gubo.lightDir * 140.0f) * baseTr; // Calculates emission matrix
-        emissionUbo.mvpMat = glm::scale(emissionUbo.mvpMat, glm::vec3(3.0f, 3.0f, 3.0f)); // Scales the emission matrix
-        DSsun.map(currentImage, &emissionUbo, 0); // Maps the emission uniform buffer object
+        emissionUbo.mvpMat = ViewPrj * glm::translate(glm::mat4(1), gubo.lightDir * 145.0f) * baseTr; // Calculates emission matrix
+        emissionUbo.mvpMat = glm::scale(emissionUbo.mvpMat, glm::vec3(8.0f, 8.0f, 8.0f)); // Scales the emission matrix
+        DSmoon.map(currentImage, &emissionUbo, 0);
 
         // Initializes matrices and parameters for different objects
         SingleObjectMatricesUniformBufferObject ScooterUbo{};
@@ -1100,8 +1100,8 @@ protected:
         SkyScraperMatricesUniformBufferObject skyScraperUbos[4]{};
         ObjectParametersUniformBufferObject skyScraperParamUbos[4]{};
 
-        TreeMatricesUniformBufferObject treeUbos[4]; // Array of UBOs for trees
-        ObjectParametersUniformBufferObject treeParamUbos[4]; // Array of parameters for trees
+        TreeMatricesUniformBufferObject treeUbos[4];
+        ObjectParametersUniformBufferObject treeParamUbos[4];
 
         LampPostMatricesUniformBufferObject LampPostUbo{};
         ObjectParametersUniformBufferObject LampPostParUbo{};

@@ -43,18 +43,18 @@ void main() {
 
     // Illuminazione diffusa
     float DiffInt = max(dot(N, lightDir), 0.0);
-    vec3 Diffuse = BaseColor * DiffInt;
+    vec3 Diffuse = BaseColor * max(dot(N, lightDir), 0.0) * gubo.lightColor.rgb;
 
     // Riflessi speculari (Blinn-Phong semplice)
     vec3 halfwayDir = normalize(lightDir + EyeDir);
-    float SpecInt = pow(max(dot(N, halfwayDir), 0.0), 16.0);  // Specularità fissa
+    float SpecInt = pow(max(dot(N, halfwayDir), 0.0), 8.0);  // Specularità fissa
 
     // Fattore Fresnel-Schlick (valore base per oggetti non metallici)
     vec3 F0 = vec3(0.04);  // Fresnel di base per materiali dielettrici (non metallici)
     vec3 Specular = lightColor * SpecInt * F0;
 
     // Luce ambientale fissa
-    vec3 ambientLight = vec3(0.1);
+    vec3 ambientLight = vec3(0.1, 0.1, 0.2);
     vec3 color = Diffuse + Specular + ambientLight * BaseColor;
 
     // Output del colore finale
