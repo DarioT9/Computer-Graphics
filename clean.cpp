@@ -662,9 +662,11 @@ protected:
 //        TSoil.init(this, "textures/city/newSand.png");
 
         // Initialize the Soil texture with the image file
-        TSoil.init(this, "textures/city/sand.jpeg", VK_FORMAT_R8G8B8A8_SRGB, false);
+        TSoil.init(this, "textures/city/newSand.jpeg", VK_FORMAT_R8G8B8A8_SRGB, false);
         // Configure the Soil texture sampler for mirrored repeat wrapping
-        TSoil.createTextureSampler();
+        TSoil.createTextureSampler(
+                VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT, VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT
+                );
 
 
         TPizzeria.init(this, "textures/pizzeria/TPizzeria.jpeg");
@@ -1325,8 +1327,8 @@ protected:
 
         // Sets the scale factor for the SkyBox and adjusts its translation to center it in the scene
 //        float SkyBox_scale_factor = 98.0f;
-        float SkyBox_scale_factor = 500.0f;
-        glm::vec3 skybox_center_offset = glm::vec3(0, 3, -5); // Adjust the translation values to center the SkyBox
+        float SkyBox_scale_factor = 1000.0f;
+        glm::vec3 skybox_center_offset = glm::vec3(0, 0, -5); // Adjust the translation values to center the SkyBox
 
         // Sets up the model-view-projection matrix for the SkyBox with scaling and translation
         SkyBoxUbo.mvpMat = M * glm::mat4(glm::mat3(ViewMatrix))
