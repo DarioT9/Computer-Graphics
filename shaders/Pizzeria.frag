@@ -9,12 +9,21 @@ layout(location = 3) in vec4 fragTan;  // Tangente del frammento
 
 // Output del colore calcolato
 layout(location = 0) out vec4 outColor;
+const int NLAMPPOST=256;
+
+struct PointLight {
+    vec3 position;   // Posizione della luce
+    vec3 color;      // Colore della luce
+    float intensity; // Intensità della luce
+    float padding;   // Padding per allineamento
+};
 
 // Uniforms globali (luce e vista)
 layout(set = 0, binding = 0) uniform GlobalUniformBufferObject {
     vec3 lightDir;
     vec4 lightColor;
     vec3 eyePos;
+    PointLight PointLights[NLAMPPOST]; // Point lights
 } gubo;
 
 // Uniform per la texture del colore della città

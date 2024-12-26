@@ -13,6 +13,7 @@
 #define TOTAL_TILES 64
 #define NSKYSCRAPER 16
 #define NTREE 64
+#define NLAMPPOST 256
 
 #define PI 3.14159265359
 
@@ -28,11 +29,20 @@ struct BoundingBox {
     glm::vec2 max;  // Maximum coordinates (x, y)
 };
 
+// Struct representing point lights to add to the global uniform
+struct PointLight {
+    alignas(16) glm::vec3 lightPosition;
+    alignas(16) glm::vec3 lightColor;
+    float lightIntensity;
+    float padding;
+};
+
 // Global uniform buffer object holding light direction, light color, and eye position
 struct GlobalUniformBufferObject {
     alignas(16) glm::vec3 lightDir;  // Direction of light
     alignas(16) glm::vec4 lightColor; // Color of the light
     alignas(16) glm::vec3 eyePos;  // Eye (camera) position
+    PointLight PointLights[NLAMPPOST]; // Point lights
 };
 
 // Struct for object matrices, including Model-View-Projection (MVP), Model, and Normal matrices
@@ -86,10 +96,10 @@ void initializeSkyScraperIndices() {
 }
 
 // Arrays holding indices for each tree model
-int indicesTree1[16];
-int indicesTree2[16];
-int indicesTree3[16];
-int indicesTree4[16];
+int indicesTree1[16] = {3, 15, 8, 30, 12, 5, 26, 1, 9, 16, 22, 28, 37, 40, 49, 61};
+int indicesTree2[16] = {2, 6, 10, 18, 20, 25, 33, 41, 45, 50, 52, 53, 54, 56, 58, 60};
+int indicesTree3[16] = {4, 7, 11, 14, 19, 21, 23, 29, 31, 32, 34, 39, 42, 44, 47, 48};
+int indicesTree4[16] = {0, 9, 13, 17, 24, 27, 35, 36, 38, 43, 46, 51, 55, 57, 59, 62};
 
 // Struct for tree matrices, including MVP, Model, and Normal matrices
 struct TreeMatricesUniformBufferObject {
@@ -97,35 +107,6 @@ struct TreeMatricesUniformBufferObject {
     alignas(16) glm::mat4 mMat[NTREE];    // Model matrix for each tree
     alignas(16) glm::mat4 nMat[NTREE];    // Normal matrix for each tree
 };
-
-// Function to generate unique random indices for the trees
-void generateUniqueTreeIndices(int* indices1, int* indices2, int* indices3, int* indices4, int numIndices) {
-    // Create a pool of numbers from 0 to 63, excluding 28
-    std::vector<int> pool;
-    for (int i = 0; i < 64; ++i) {
-        if (i != 28) {
-            pool.push_back(i);
-        }
-    }
-
-    // Shuffle the pool
-    std::random_device rd;
-    std::mt19937 g(rd());
-    std::shuffle(pool.begin(), pool.end(), g);
-
-    // Distribute the indices among the arrays
-    for (int i = 0; i < numIndices; ++i) {
-        indices1[i] = pool[i];
-        indices2[i] = pool[i + numIndices];
-        indices3[i] = pool[i + 2 * numIndices];
-        indices4[i] = pool[i + 3 * numIndices];
-    }
-}
-
-// Initialization function for trees
-void initializeTreeIndices() {
-    generateUniqueTreeIndices(indicesTree1, indicesTree2, indicesTree3, indicesTree4, NTREE);
-}
 
 
 // Function to update tree matrices, including translation, scaling, and matrix calculations
@@ -157,7 +138,6 @@ void updateTreeMatrices(TreeMatricesUniformBufferObject* treeUbo, int& counter, 
     ++counter;
 }
 
-#define NLAMPPOST 256
 // Struct for lamp post matrices, including MVP, Model, and Normal matrices
 struct LampPostMatricesUniformBufferObject {
     alignas(16) glm::mat4 mvpMat[NLAMPPOST];  // Model-View-Projection matrix for each lamp post
@@ -173,6 +153,10 @@ struct skyBoxUniformBufferObject {
 // Struct for emission matrices (used for objects that emit light)
 struct EmissionUniformBufferObject {
     alignas(16) glm::mat4 mvpMat;  // Model-View-Projection matrix for emission objects
+};
+
+struct LightBulbUniformBufferObject {
+    alignas(16) glm::mat4 mvpMat[NLAMPPOST];  // Model-View-Projection matrix for emission objects
 };
 
 // Object parameters structure for controlling light emission (e.g., power and angle)
@@ -272,6 +256,7 @@ protected:
     DescriptorSetLayout DSLLampPost;    // Descriptor layout for LampPost
     DescriptorSetLayout DSLskyBox;      // Descriptor layout for the SkyBox
     DescriptorSetLayout DSLEmission;    // Descriptor layout for emission materials
+    DescriptorSetLayout DSLLightBulb;   // Descriptor layout for LightBulb
 
     // Vertex descriptors for defining the layout of vertex data for various objects
     VertexDescriptor VDScooter;         // Vertex descriptor for the Scooter model
@@ -284,6 +269,7 @@ protected:
     VertexDescriptor VDLampPost;        // Vertex descriptor for the LampPost model
     VertexDescriptor VDskyBox;          // Vertex descriptor for the SkyBox
     VertexDescriptor VDEmission;        // Vertex descriptor for the emission model
+    VertexDescriptor VDLightBulb;       // Vertex descriptor for the LightBulb    
 
     // Pipelines for rendering the various objects
     Pipeline PScooter;                  // Pipeline for rendering the Scooter
@@ -296,6 +282,7 @@ protected:
     Pipeline PLampPost;                 // Pipeline for rendering the LampPost
     Pipeline PskyBox;                   // Pipeline for rendering the SkyBox
     Pipeline PEmission;                 // Pipeline for rendering the emission objects
+    Pipeline PLightBulb;                // Pipeline for rendering the LightBulb
 
     // Models, textures, and descriptor sets for various objects
     DescriptorSet DSGlobal;             // Global descriptor set for uniforms like lighting and camera position
@@ -310,7 +297,8 @@ protected:
     Model MTree[4];                     // Models for the 4 trees
     Model MLampPost;                    // Model for the LampPost
     Model MskyBox;                      // Model for the SkyBox
-    Model Mmoon;                         // Model for the Moon (possibly for lighting)
+    Model Mmoon;                        // Model for the Moon (possibly for lighting)
+    Model MLightBulb;                   // Model for the LightBulb
 
     // Textures for the various objects in the scene
     Texture TScooterBaseColor, TScooterNormal, TScooterHeight, TScooterMetallic, TScooterRoughness, TScooterAmbientOcclusion; // Textures for the Scooter
@@ -321,7 +309,8 @@ protected:
     Texture TTree[4];                   // Textures for the 4 trees
     Texture TLampPost;                  // Texture for the LampPost
     Texture TskyBox;                    // Texture for the SkyBox
-    Texture Tmoon;                       // Texture for the Moon
+    Texture Tmoon;                      // Texture for the Moon
+    Texture TLightBulb;                 // Texture for the LightBulb
 
     // Descriptor sets for the various objects
     DescriptorSet DSScooter;            // Descriptor set for the Scooter
@@ -333,7 +322,8 @@ protected:
     DescriptorSet DSTree[4];            // Descriptor sets for the 4 trees
     DescriptorSet DSLampPost;           // Descriptor set for the LampPost
     DescriptorSet DSskyBox;             // Descriptor set for the SkyBox
-    DescriptorSet DSmoon;                // Descriptor set for the Moon
+    DescriptorSet DSmoon;               // Descriptor set for the Moon
+    DescriptorSet DSLightBulb;          // Descriptor set for the LightBulb
 
     // Other application parameters for scene management and camera controls
     int currScene = 0;                  // Current scene index
@@ -451,6 +441,12 @@ protected:
         // Initialize Descriptor Set Layout for the Emission object with uniform buffers and textures.
         DSLEmission.init(this, {
                 {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         VK_SHADER_STAGE_VERTEX_BIT,   sizeof(EmissionUniformBufferObject), 1},
+                {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0,                                   1}
+        });
+
+        // Initialize Descriptor Set Layout for the LightBulb object with uniform buffers and textures.
+        DSLLightBulb.init(this, {
+                {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         VK_SHADER_STAGE_VERTEX_BIT,   sizeof(LightBulbUniformBufferObject), 1},
                 {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0,                                   1}
         });
 
@@ -588,6 +584,16 @@ protected:
                                         sizeof(glm::vec2), UV}
                         });
 
+        // Initialize the Vertex Descriptor for the LightBulb object with vertex attributes and input rate.
+        VDLightBulb.init(this, {
+                {0, sizeof(EmissionVertex), VK_VERTEX_INPUT_RATE_VERTEX}
+        }, {
+                                {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(EmissionVertex, pos),
+                                        sizeof(glm::vec3), POSITION},
+                                {0, 1, VK_FORMAT_R32G32_SFLOAT,    offsetof(EmissionVertex, UV),
+                                        sizeof(glm::vec2), UV}
+                        });
+
         // Initialize the pipelines. Shaders are loaded from the specified files and use the newly defined VertexDescriptor.
         // Each pipeline is associated with its respective DescriptorSetLayout, such as DSLGlobal for the common descriptors
         // and specific layouts like DSLScooter, DSLCity, etc., for the unique objects.
@@ -610,6 +616,7 @@ protected:
         PskyBox.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
                                     VK_CULL_MODE_BACK_BIT, false);
         PEmission.init(this, &VDEmission, "shaders/EmissionVert.spv", "shaders/EmissionFrag.spv", {&DSLEmission});
+        PLightBulb.init(this, &VDEmission, "shaders/LightBulbVert.spv", "shaders/LightBulbFrag.spv", {&DSLLightBulb});
 
         // Load models from the specified paths. Each model is initialized with its respective VertexDescriptor and format.
         // The models include different objects such as scooter, city, soil, pizzeria, skyscrapers, trees, lamp post, and the skybox.
@@ -639,6 +646,7 @@ protected:
         MLampPost.init(this, &VDLampPost, "models/lamppost.mgcg", MGCG);
         MskyBox.init(this, &VDskyBox, "models/SkyBoxCube.obj", OBJ);
         Mmoon.init(this, &VDEmission, "models/Sphere.obj", OBJ);
+        MLightBulb.init(this, &VDLightBulb, "models/LightBulb/lightbulb.gltf", GLTF);
 
         // Load textures for various objects. Each texture is initialized with the respective file path.
         // This includes textures for the scooter, city, soil, pizzeria, skyscrapers, trees, lamp post, skybox, and the moon.
@@ -684,13 +692,15 @@ protected:
 
         Tmoon.init(this, "textures/moon/moonmap.jpg");
 
+        TLightBulb.init(this, "textures/LightBulb/lightbulbbase.png");
+
         // Set up descriptor pool sizes based on the number of uniform blocks, textures, and descriptor sets required for the scene.
         DPSZs.uniformBlocksInPool =
-                1 + 2 + 2 + 2 + 2 + 8 + 8 + 2 + 1 + 1; // Total number of uniform blocks (for scooter, city, soil, pizzeria, etc.)
+                1 + 2 + 2 + 2 + 2 + 8 + 8 + 2 + 1 + 1 + 1; // Total number of uniform blocks (for scooter, city, soil, pizzeria, etc.)
         DPSZs.texturesInPool =
-                6 + 1 + 1 + 1 + 4 + 4 + 1 + 1 + 1; // Total number of textures (for scooter, city, soil, pizzeria, etc.)
+                6 + 1 + 1 + 1 + 4 + 4 + 1 + 1 + 1 + 1; // Total number of textures (for scooter, city, soil, pizzeria, etc.)
         DPSZs.setsInPool = 1 + 1 + 1 + 1 + 4 + 4 + 1 + 1 + 1 +
-                           1; // Total number of descriptor sets (for scooter, city, soil, pizzeria, etc.)
+                           1 + 1; // Total number of descriptor sets (for scooter, city, soil, pizzeria, etc.)
 
         std::cout << "Initialization completed!\n";
         std::cout << "Uniform Blocks in the Pool  : " << DPSZs.uniformBlocksInPool << "\n";
@@ -720,6 +730,7 @@ protected:
         PLampPost.create();
         PskyBox.create();
         PEmission.create();
+        PLightBulb.create();
 
         // Create descriptor sets for each object type with their respective textures.
         DSScooter.init(this, &DSLScooter,
@@ -737,6 +748,7 @@ protected:
         DSLampPost.init(this, &DSLLampPost, {&TLampPost});
         DSskyBox.init(this, &DSLskyBox, {&TskyBox});
         DSmoon.init(this, &DSLEmission, {&Tmoon});
+        DSLightBulb.init(this, &DSLLightBulb, {&TLightBulb});
 
         DSGlobal.init(this, &DSLGlobal, {});
     }
@@ -760,6 +772,7 @@ protected:
         PLampPost.cleanup();
         PskyBox.cleanup();
         PEmission.cleanup();
+        PLightBulb.cleanup();
 
         // Clean up the global descriptor set.
         DSGlobal.cleanup();
@@ -780,6 +793,7 @@ protected:
         DSLampPost.cleanup();
         DSskyBox.cleanup();
         DSmoon.cleanup();
+        DSLightBulb.cleanup();
     }
 
     // This function handles the cleanup of models, textures, and Descriptor Set Layouts.
@@ -833,6 +847,10 @@ protected:
         Tmoon.cleanup();
         Mmoon.cleanup();
 
+        // Clean up texture and model resources for the lightbulb.
+        TLightBulb.cleanup();
+        MLightBulb.cleanup();
+
         // Clean up the global descriptor set layout.
         DSLGlobal.cleanup();
 
@@ -852,6 +870,7 @@ protected:
         DSLLampPost.cleanup();
         DSLskyBox.cleanup();
         DSLEmission.cleanup();
+        DSLLightBulb.cleanup();
 
         // Clean up the pipelines by destroying them completely.
         PScooter.destroy();
@@ -869,13 +888,12 @@ protected:
         PLampPost.destroy();
         PskyBox.destroy();
         PEmission.destroy();
+        PLightBulb.destroy();
     }
 
     // This function handles the population of the command buffer.
     // It sends all the objects to the GPU that need to be drawn, along with their buffers and textures.
     void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
-
-        std::cout << "test\n";
 
         // Binding the pipeline, model, descriptor sets, and issuing the draw call for the scooter.
         std::vector<ModelOffsets> ScooterOffsets = calculateOffsets("models/Scooter.obj");
@@ -969,6 +987,14 @@ protected:
         vkCmdDrawIndexed(commandBuffer,
                          static_cast<uint32_t>(Mmoon.indices.size()), 1, 0, 0, 0);
 
+        // Binding the pipeling and model for the lightbulb
+        PLightBulb.bind(commandBuffer);
+        MLightBulb.bind(commandBuffer);
+        DSLightBulb.bind(commandBuffer, PLightBulb, 0, currentImage);
+        // Draw the lightbulb
+        vkCmdDrawIndexed(commandBuffer,
+                         static_cast<uint32_t>(MLightBulb.indices.size()), NLAMPPOST, 0, 0, 0);
+
         // Binding the pipeline and model for the pizzeria.
         PPizzeria.bind(commandBuffer);                // Pipeline for the pizzeria
         MPizzeria.bind(commandBuffer);                // Model for the pizzeria
@@ -1021,7 +1047,7 @@ protected:
         glm::mat4 M;
 
         // Defines the velocity and steering parameters for the movement.
-        const float STEERING_SPEED = glm::radians(80.0f);
+        const float STEERING_SPEED = glm::radians(120.0f);
         const float ROT_SPEED = glm::radians(140.0f);
         const float MOVE_SPEED = 10.0f;
 
@@ -1057,16 +1083,17 @@ protected:
                 proposedPos.x = proposedPos.x - sin(Yaw) * dampedVel;
                 proposedPos.z = proposedPos.z - cos(Yaw) * dampedVel;
             }
-            if(m.x == 0) {
-                if(SteeringAng > STEERING_SPEED * deltaT) {
-                    SteeringAng -= STEERING_SPEED * deltaT;
-                } else if(SteeringAng < -STEERING_SPEED * deltaT) {
-                    SteeringAng += STEERING_SPEED * deltaT;
-                } else {
-                    SteeringAng = 0.0f;
-                }
-            }
 
+        }
+
+        if(m.x == 0) {
+            if(SteeringAng > STEERING_SPEED * deltaT) {
+                SteeringAng -= STEERING_SPEED * deltaT;
+            } else if(SteeringAng < -STEERING_SPEED * deltaT) {
+                SteeringAng += STEERING_SPEED * deltaT;
+            } else {
+                SteeringAng = 0.0f;
+            }
         }
 
         // Checks for collisions with the new position.
@@ -1152,12 +1179,37 @@ protected:
         gubo.lightDir = glm::vec3(-1.0f, 1.0f, 1.0f);  // Sets light direction
         gubo.lightColor = glm::vec4(0.8f, 0.8f, 1.0f, 1.0f); // Color of the moon
         gubo.eyePos = glm::vec3(glm::inverse(ViewMatrix) * glm::vec4(0, 3, 0, 1)); // Sets eye position
+
+        // Setting point lights
+        for(int i = 0; i < NLAMPPOST/4; i++) {
+            gubo.PointLights[i * 4].lightPosition = glm::vec3(75 - (24 * (i % 8)), 0.0, 85 - (24 * (i / 8))) + glm::vec3(0.0f, 5.0f, 1.0f);
+            gubo.PointLights[i * 4].lightColor = glm::vec3(1.0f, 0.85f, 0.4f);
+            gubo.PointLights[i * 4].lightIntensity = 3.0f;
+
+            gubo.PointLights[i * 4 + 1].lightPosition = glm::vec3(84 - (24 * (i % 8)), 0.0, 75 - (24 * (i / 8))) + glm::vec3(0.0f, 5.0f, 0.0f);
+            gubo.PointLights[i * 4 + 1].lightColor = glm::vec3(1.0f, 0.85f, 0.4f);
+            gubo.PointLights[i * 4 + 1].lightIntensity = 3.0f;
+
+            gubo.PointLights[i * 4 + 2].lightPosition = glm::vec3(93 - (24 * (i % 8)), 0.0, 85 - (24 * (i / 8))) + glm::vec3(0.0f, 5.0f, 1.0f);
+            gubo.PointLights[i * 4 + 2].lightColor = glm::vec3(1.0f, 0.85f, 0.4f);
+            gubo.PointLights[i * 4 + 2].lightIntensity = 3.0f;
+
+            gubo.PointLights[i * 4 + 3].lightPosition = glm::vec3(84 - (24 * (i % 8)), 0.0, 93 - (24 * (i / 8))) + glm::vec3(0.0f, 5.0f, 0.0f);
+            gubo.PointLights[i * 4 + 3].lightColor = glm::vec3(1.0f, 0.85f, 0.4f);
+            gubo.PointLights[i * 4 + 3].lightIntensity = 3.0f;
+        }
+
         DSGlobal.map(currentImage, &gubo, 0); // Maps the global uniform buffer object
+
 
         EmissionUniformBufferObject emissionUbo{};
         emissionUbo.mvpMat = ViewPrj * glm::translate(glm::mat4(1), gubo.lightDir * 145.0f) * baseTr; // Calculates emission matrix
         emissionUbo.mvpMat = glm::scale(emissionUbo.mvpMat, glm::vec3(8.0f, 8.0f, 8.0f)); // Scales the emission matrix
         DSmoon.map(currentImage, &emissionUbo, 0);
+
+        LightBulbUniformBufferObject LightBulbUbo{};
+        LightBulbUbo.mvpMat[0] = ViewPrj * baseTr; 
+        LightBulbUbo.mvpMat[0] = glm::scale(LightBulbUbo.mvpMat[0], glm::vec3(100.0f, 100.0f, 100.0f));
 
         // Initializes matrices and parameters for different objects
         SingleObjectMatricesUniformBufferObject ScooterUbo{};
@@ -1265,6 +1317,12 @@ protected:
             // Calculates the normal matrix for the first lamp post
             LampPostUbo.nMat[i * 4] = glm::inverse(glm::transpose(LampPostUbo.mMat[i * 4]));
 
+            // Calculates the MVP matrix for the first lightbulb
+            LightBulbUbo.mvpMat[i * 4] = ViewPrj * LampPostUbo.mMat[i * 4]; 
+            LightBulbUbo.mvpMat[i * 4] = glm::translate(LightBulbUbo.mvpMat[i * 4], glm::vec3(0.0f, 5.0f, 0.5f));
+            LightBulbUbo.mvpMat[i * 4] = glm::rotate(LightBulbUbo.mvpMat[i * 4],  glm::radians(80.0f), glm::vec3(1.0f,0.0f,0.0f));
+            LightBulbUbo.mvpMat[i * 4] = glm::scale(LightBulbUbo.mvpMat[i * 4], glm::vec3(2.0f, 2.0f, 2.0f));
+
             // Updates the model matrix for the second lamp post in the set
             LampPostUbo.mMat[i * 4 + 1] =
                     glm::translate(glm::mat4(1.0f), glm::vec3(84 - (24 * (i % 8)), 0.0, 75 - (24 * (i / 8)))) *
@@ -1273,6 +1331,12 @@ protected:
             LampPostUbo.mvpMat[i * 4 + 1] = ViewPrj * LampPostUbo.mMat[i * 4 + 1];
             // Calculates the normal matrix for the second lamp post
             LampPostUbo.nMat[i * 4 + 1] = glm::inverse(glm::transpose(LampPostUbo.mMat[i * 4 + 1]));
+
+            // Calculates the MVP matrix for the second lightbulb
+            LightBulbUbo.mvpMat[i * 4 + 1] = ViewPrj * LampPostUbo.mMat[i * 4 + 1]; 
+            LightBulbUbo.mvpMat[i * 4 + 1] = glm::translate(LightBulbUbo.mvpMat[i * 4 + 1], glm::vec3(0.0f, 5.0f, 0.5f));
+            LightBulbUbo.mvpMat[i * 4 + 1] = glm::rotate(LightBulbUbo.mvpMat[i * 4 + 1],  glm::radians(80.0f), glm::vec3(1.0f,0.0f,0.0f));
+            LightBulbUbo.mvpMat[i * 4 + 1] = glm::scale(LightBulbUbo.mvpMat[i * 4 + 1], glm::vec3(2.0f, 2.0f, 2.0f));
 
             // Updates the model matrix for the third lamp post in the set
             LampPostUbo.mMat[i * 4 + 2] =
@@ -1283,12 +1347,24 @@ protected:
             // Calculates the normal matrix for the third lamp post
             LampPostUbo.nMat[i * 4 + 2] = glm::inverse(glm::transpose(LampPostUbo.mMat[i * 4 + 2]));
 
+            // Calculates the MVP matrix for the third lightbulb
+            LightBulbUbo.mvpMat[i * 4 + 2] = ViewPrj * LampPostUbo.mMat[i * 4 + 2]; 
+            LightBulbUbo.mvpMat[i * 4 + 2] = glm::translate(LightBulbUbo.mvpMat[i * 4 + 2], glm::vec3(0.0f, 5.0f, 0.5f));
+            LightBulbUbo.mvpMat[i * 4 + 2] = glm::rotate(LightBulbUbo.mvpMat[i * 4 + 2],  glm::radians(80.0f), glm::vec3(1.0f,0.0f,0.0f));
+            LightBulbUbo.mvpMat[i * 4 + 2] = glm::scale(LightBulbUbo.mvpMat[i * 4 + 2], glm::vec3(2.0f, 2.0f, 2.0f));
+
             // Updates the model matrix for the fourth lamp post in the set
             LampPostUbo.mMat[i * 4 + 3] = glm::translate(glm::mat4(1.0f), glm::vec3(84 - (24 * (i % 8)), 0.0, 93 - (24 * (i / 8))));
             // Calculates the MVP matrix for the fourth lamp post
             LampPostUbo.mvpMat[i * 4 + 3] = ViewPrj * LampPostUbo.mMat[i * 4 + 3];
             // Calculates the normal matrix for the fourth lamp post
             LampPostUbo.nMat[i * 4 + 3] = glm::inverse(glm::transpose(LampPostUbo.mMat[i * 4 + 3]));
+
+            // Calculates the MVP matrix for the fourth lightbulb
+            LightBulbUbo.mvpMat[i * 4 + 3] = ViewPrj * LampPostUbo.mMat[i * 4 + 3]; 
+            LightBulbUbo.mvpMat[i * 4 + 3] = glm::translate(LightBulbUbo.mvpMat[i * 4 + 3], glm::vec3(0.0f, 5.0f, 0.5f));
+            LightBulbUbo.mvpMat[i * 4 + 3] = glm::rotate(LightBulbUbo.mvpMat[i * 4 + 3],  glm::radians(80.0f), glm::vec3(1.0f,0.0f,0.0f));
+            LightBulbUbo.mvpMat[i * 4 + 3] = glm::scale(LightBulbUbo.mvpMat[i * 4 + 3], glm::vec3(2.0f, 2.0f, 2.0f));
         }
 
 
@@ -1353,6 +1429,9 @@ protected:
 
         // Maps the UBO for the lamp posts
         DSLampPost.map(currentImage, &LampPostUbo, 0);
+
+        // Maps the UBO for the light bulb
+        DSLightBulb.map(currentImage, &LightBulbUbo, 0);
 
         // Maps the UBO for the SkyBox
         DSskyBox.map(currentImage, &SkyBoxUbo, 0);
@@ -1475,8 +1554,6 @@ int main() {
 
     // Initialize skyscraper indices once at the start of the program
     initializeSkyScraperIndices();
-    // Initialize tree indices once at the start of the program
-    initializeTreeIndices();
 
     try {
         app.run();  // Run the application
