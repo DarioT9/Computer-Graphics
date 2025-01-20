@@ -1097,9 +1097,14 @@ protected:
         }
 
         // Checks for collisions with the new position.
-        if (!checkCollision(proposedPos, ang, 0.7f)) {
+//        if (!checkCollision(proposedPos, ang, 0.7f)) {
+        if (!checkCollision(proposedPos, ScooterPos, Yaw, 0.7f, 0.08f)) {
             // Only updates the position if no collision is detected.
             ScooterPos = proposedPos;
+        }
+        else {
+            // If a collision is detected, the scooter stops moving.
+            SteeringAng = 0.0f;
         }
 
         glm::mat4 Mv;
@@ -1482,41 +1487,155 @@ protected:
         DSLampPost.map(currentImage, &LampPostParUbo, 2);
     }
 
-    bool checkCollision(glm::vec3 centerPos, float angle, float halfLength) {
+    bool checkCollision(glm::vec3& newCenterPos, glm::vec3 realPos, float angle, float halfLength, float halfWidth) {
+        bool collision = false;
+        glm::vec2 direction(-sin(angle), cos(angle));
+
+        // Calculate only front and back points
+        glm::vec2 frontPoint = glm::vec2(newCenterPos.x, newCenterPos.z) + halfLength * direction;
+        glm::vec2 backPoint = glm::vec2(newCenterPos.x, newCenterPos.z) - halfLength * direction;
+
+        // Store original position for sliding calculation
+        glm::vec3 originalNewPos = newCenterPos;
+
+        // Check external barriers
+        if (frontPoint.x <= externalBarriers.min.x || frontPoint.x >= externalBarriers.max.x ||
+            backPoint.x <= externalBarriers.min.x || backPoint.x >= externalBarriers.max.x) {
+            collision = true;
+        }
+
+        if (frontPoint.y <= externalBarriers.min.y || frontPoint.y >= externalBarriers.max.y ||
+            backPoint.y <= externalBarriers.min.y || backPoint.y >= externalBarriers.max.y) {
+            collision = true;
+        }
+
+        // Check internal barriers
+        for (const auto& barrier : barriers) {
+            // Check if either point is inside the barrier
+            if (isPointInBarrier(frontPoint, barrier) || isPointInBarrier(backPoint, barrier)) {
+                collision = true;
+            }
+        }
+
+        return collision;
+    }
+
+    bool isPointInBarrier(const glm::vec2& point, const BoundingBox& barrier) {
+        return point.x >= barrier.min.x && point.x <= barrier.max.x &&
+               point.y >= barrier.min.y && point.y <= barrier.max.y;
+    }
+
+/*    bool checkCollision(glm::vec3 newCenterPos, glm::vec3 realPos, float angle, float halfLength, float halfWidth) {
+        bool collision = false;  // Initialize collision flag
         // The direction of the scooter based on its orientation
         glm::vec2 direction(-sin(angle), cos(angle));
 
         // Calculate the points in front and behind the center position
-        glm::vec2 frontPoint = glm::vec2(centerPos.x, centerPos.z) + halfLength * direction;
-        glm::vec2 backPoint = glm::vec2(centerPos.x, centerPos.z) - halfLength * direction;
+//        glm::vec2 frontPoint = glm::vec2(newCenterPos.x, newCenterPos.z) + halfLength * direction;
+//        glm::vec2 backPoint = glm::vec2(newCenterPos.x, newCenterPos.z) - halfLength * direction;
+        glm::vec2 frontLeftPoint = glm::vec2(newCenterPos.x, newCenterPos.z) +
+                halfLength * direction + halfWidth * glm::vec2(-direction.y, direction.x);
+        glm::vec2 frontRightPoint = glm::vec2(newCenterPos.x, newCenterPos.z) +
+                halfLength * direction + halfWidth * glm::vec2(direction.y, -direction.x);
+        glm::vec2 backLeftPoint = glm::vec2(newCenterPos.x, newCenterPos.z) -
+                halfLength * direction + halfWidth * glm::vec2(-direction.y, direction.x);
+        glm::vec2 backRightPoint = glm::vec2(newCenterPos.x, newCenterPos.z) -
+                halfLength * direction + halfWidth * glm::vec2(direction.y, -direction.x);
 
         // Check if the scooter is outside the external barriers
+//        if (
+//                frontPoint.x <= externalBarriers.min.x ||
+//                frontPoint.x >= externalBarriers.max.x ||
+//                frontPoint.y <= externalBarriers.min.y ||
+//                frontPoint.y >= externalBarriers.max.y ||
+//                backPoint.x <= externalBarriers.min.x ||
+//                backPoint.x >= externalBarriers.max.x ||
+//                backPoint.y <= externalBarriers.min.y ||
+//                backPoint.y >= externalBarriers.max.y
+//                )
         if (
-                frontPoint.x <= externalBarriers.min.x ||
-                frontPoint.x >= externalBarriers.max.x ||
-                frontPoint.y <= externalBarriers.min.y ||
-                frontPoint.y >= externalBarriers.max.y ||
-                backPoint.x <= externalBarriers.min.x ||
-                backPoint.x >= externalBarriers.max.x ||
-                backPoint.y <= externalBarriers.min.y ||
-                backPoint.y >= externalBarriers.max.y
-                )
+                frontLeftPoint.x <= externalBarriers.min.x ||
+                frontLeftPoint.x >= externalBarriers.max.x ||
+                frontLeftPoint.y <= externalBarriers.min.y ||
+                frontLeftPoint.y >= externalBarriers.max.y ||
+                frontRightPoint.x <= externalBarriers.min.x ||
+                frontRightPoint.x >= externalBarriers.max.x ||
+                frontRightPoint.y <= externalBarriers.min.y ||
+                frontRightPoint.y >= externalBarriers.max.y ||
+                backLeftPoint.x <= externalBarriers.min.x ||
+                backLeftPoint.x >= externalBarriers.max.x ||
+                backLeftPoint.y <= externalBarriers.min.y ||
+                backLeftPoint.y >= externalBarriers.max.y ||
+                backRightPoint.x <= externalBarriers.min.x ||
+                backRightPoint.x >= externalBarriers.max.x ||
+                backRightPoint.y <= externalBarriers.min.y ||
+                backRightPoint.y >= externalBarriers.max.y
+        )
         {
-            return true; // Collision detected with external barriers
+            collision = allowCollisionMovement(newCenterPos, realPos, true, nullptr);
         }
 
-        // Check for collisions with internal barriers for both front and back points
-        for (const auto& barrier : barriers) {
-            if ((frontPoint.x >= barrier.min.x && frontPoint.x <= barrier.max.x &&
-                 frontPoint.y >= barrier.min.y && frontPoint.y <= barrier.max.y) || // Check if front point is inside barrier
-                (backPoint.x >= barrier.min.x && backPoint.x <= barrier.max.x &&
-                 backPoint.y >= barrier.min.y && backPoint.y <= barrier.max.y))     // Check if back point is inside barrier
-            {
-                return true;  // Collision detected with an internal barrier
+        if (!collision)
+        {
+            // Check for collisions with internal barriers for both front and back points
+
+            // Check for collisions with internal barriers for both front and back points
+            for (const auto& barrier : barriers) {
+                //            if ((frontPoint.x >= barrier.min.x && frontPoint.x <= barrier.max.x &&
+                //                 frontPoint.y >= barrier.min.y && frontPoint.y <= barrier.max.y) || // Check if front point is inside barrier
+                //                (backPoint.x >= barrier.min.x && backPoint.x <= barrier.max.x &&
+                //                 backPoint.y >= barrier.min.y && backPoint.y <= barrier.max.y))     // Check if back point is inside barrier
+
+                if (
+                        frontLeftPoint.x >= barrier.min.x && frontLeftPoint.x <= barrier.max.x &&
+                        frontLeftPoint.y >= barrier.min.y && frontLeftPoint.y <= barrier.max.y ||
+                        frontRightPoint.x >= barrier.min.x && frontRightPoint.x <= barrier.max.x &&
+                        frontRightPoint.y >= barrier.min.y && frontRightPoint.y <= barrier.max.y ||
+                        backLeftPoint.x >= barrier.min.x && backLeftPoint.x <= barrier.max.x &&
+                        backLeftPoint.y >= barrier.min.y && backLeftPoint.y <= barrier.max.y ||
+                        backRightPoint.x >= barrier.min.x && backRightPoint.x <= barrier.max.x &&
+                        backRightPoint.y >= barrier.min.y && backRightPoint.y <= barrier.max.y
+                        )
+                {
+                    collision = allowCollisionMovement(newCenterPos, realPos, false, &barrier);
+                    break;
+                }
             }
         }
-        return false;  // No collision detected
+
+        return collision;  // No collision detected
     }
+
+    bool allowCollisionMovement(glm::vec3 newCenterPos, glm::vec3 realPos, bool isExternalBarrier, const BoundingBox* collidingBarrier) {
+
+        glm::vec2 currentCenter(realPos.x, realPos.z);
+        glm::vec2 newCenter(newCenterPos.x, newCenterPos.z);
+
+
+        glm::vec2 barrierCenter(0.0f, 0.0f);
+        if (!isExternalBarrier && collidingBarrier != nullptr)
+        {
+            glm::vec2 barrierCenter(
+                    (collidingBarrier->min.x + collidingBarrier->max.x) * 0.5f,
+                    (collidingBarrier->min.y + collidingBarrier->max.y) * 0.5f
+            );
+        }
+
+        // Calculate distances
+        float currentDistance = glm::length(currentCenter - barrierCenter);
+        float newDistance = glm::length(newCenter - barrierCenter);
+
+        // If the new position increases the distance from the barrier's center,
+        // allow the movement
+        if ((isExternalBarrier && newDistance < currentDistance) ||
+            (!isExternalBarrier && newDistance > currentDistance))
+        {
+            return false;
+        }
+        return true;
+    }*/
+
+
 
     std::vector<glm::vec2> generateCenters(int coord, int step) {
         std::vector<glm::vec2> centers;
