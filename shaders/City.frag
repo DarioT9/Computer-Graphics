@@ -79,8 +79,8 @@ void main() {
         float angle = acos(dot(Norm, pointLightDir));
 
         // Spotlight cone cutoff angle (in radians)
-        float cutoffAngle = radians(30.0);  // 30 degrees as the spotlight's cutoff angle
-        float softEdge = 0.1;  // The softness of the edge (increase this for a softer falloff)
+        float cutoffAngle = radians(22.5);  // 22.5 degrees as the spotlight's cutoff angle
+        float softEdge = 0.2;  // The softness of the edge (increase this for a softer falloff)
 
         // Use smoothstep for a smooth transition on the edge of the spotlight cone
         float spotEffect = smoothstep(cos(cutoffAngle + softEdge), cos(cutoffAngle), cosAngIncidence);
@@ -91,7 +91,7 @@ void main() {
     }
 
     // Luce ambientale fissa
-    vec3 ambientLight = vec3(0.1, 0.1, 0.2);
+    vec3 ambientLight = vec3(0.05, 0.05, 0.05);
     vec3 color = diffusePointLight + Diffuse + Specular + ambientLight * BaseColor;
 
     // Output del colore finale

@@ -69,34 +69,42 @@ void main() {
 	vec3 F0 = mix(vec3(0.04), BaseColor, Metallic);  // Fattore Fresnel
 	vec3 Specular = lightColor * SpecInt * (F0 + (1.0 - F0) * pow(1.0 - max(dot(EyeDir, halfwayDir), 0.0), 5.0));
 
-	 // ---- Luci Spotlight ----
-    vec3 diffusePointLight = vec3(0.0);
+	// ---- Luci Spotlight ----
+	vec3 pointLightColor = vec3(0.0);
 
-    for (int i = 0; i < NLAMPPOST; ++i) {
-        PointLight light = gubo.PointLights[i];
+	for (int i = 0; i < NLAMPPOST; ++i) {
+		PointLight light = gubo.PointLights[i];
 
-        vec3 pointLightDir = light.position.xyz - fragPos;
-        float distance = length(pointLightDir);  // Distance between the light and the fragment
-        float attenuation = 1.0 / (distance * distance);
-        float cosAngIncidence = max(dot(Norm, normalize(pointLightDir)), 0);
-        vec3 intensity = light.color.xyz * light.intensity * attenuation;
+		vec3 pointLightDir = light.position.xyz - fragPos;
+		float distance = length(pointLightDir);
 
-        // Calcolare l'angolo tra la direzione della luce e la direzione del punto
-        float angle = acos(dot(Norm, pointLightDir));
+		// Adjust max distance and intensity falloff
+		float maxDistance = 7.0;  // Increased range
+		if (distance > maxDistance) continue;
 
-        // Spotlight cone cutoff angle (in radians)
-        float cutoffAngle = radians(30.0);  // 30 degrees as the spotlight's cutoff angle
-        float softEdge = 0.1;  // The softness of the edge (increase this for a softer falloff)
+		vec3 lightDirNorm = normalize(pointLightDir);
+		float cosAngIncidence = max(dot(N, lightDirNorm), 0.0);
 
-        // Use smoothstep for a smooth transition on the edge of the spotlight cone
-        float spotEffect = smoothstep(cos(cutoffAngle + softEdge), cos(cutoffAngle), cosAngIncidence);
+		// Linear distance attenuation instead of quadratic
+		float attenuation = max(0.0, 1.0 - distance / maxDistance);
 
-        diffusePointLight += intensity * cosAngIncidence * spotEffect;  // Apply spotlight with smooth edge
+		vec3 intensity = light.color * light.intensity * attenuation;
+
+		// Diffuse and specular contributions
+		vec3 pointLightDiffuse = BaseColor * cosAngIncidence * (1.0 - Metallic);
+
+		vec3 halfwayDir = normalize(lightDirNorm + EyeDir);
+		float specIntensity = pow(max(dot(N, halfwayDir), 0.0), 32.0 * (1.0 - Roughness));
+		vec3 pointLightSpecular = specIntensity * F0;
+
+		pointLightColor += (pointLightDiffuse + pointLightSpecular) * intensity;
 	}
 
 	// Luce ambientale e occlusione
-	vec3 ambientLight = vec3(0.1);  // Luce ambientale costante
-	vec3 color = (Diffuse + Specular) * lightColor * AmbientOcclusion + ambientLight * BaseColor + diffusePointLight;
+	vec3 ambientLight = vec3(0.15, 0.15, 0.15);
+	vec3 color = (Diffuse + Specular) * lightColor * AmbientOcclusion +
+	ambientLight * BaseColor +
+	pointLightColor;
 
 	// Output del colore finale
 	outColor = vec4(color, 1.0);

@@ -1264,26 +1264,27 @@ protected:
         // Updates the global uniforms
         GlobalUniformBufferObject gubo{};
         gubo.lightDir = glm::vec3(-1.0f, 1.0f, 1.0f);  // Sets light direction
-        gubo.lightColor = glm::vec4(0.8f, 0.8f, 1.0f, 1.0f); // Color of the moon
+        gubo.lightColor = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);    // Sets light color
         gubo.eyePos = glm::vec3(glm::inverse(ViewMatrix) * glm::vec4(0, 3, 0, 1)); // Sets eye position
 
         // Setting point lights
+        float lightIntensity = 2.5f;
         for(int i = 0; i < NLAMPPOST/4; i++) {
             gubo.PointLights[i * 4].lightPosition = glm::vec3(75 - (24 * (i % 8)), 0.0, 85 - (24 * (i / 8))) + glm::vec3(0.0f, 5.0f, 1.0f);
             gubo.PointLights[i * 4].lightColor = glm::vec3(1.0f, 0.85f, 0.4f);
-            gubo.PointLights[i * 4].lightIntensity = 3.0f;
+            gubo.PointLights[i * 4].lightIntensity = lightIntensity;
 
             gubo.PointLights[i * 4 + 1].lightPosition = glm::vec3(84 - (24 * (i % 8)), 0.0, 75 - (24 * (i / 8))) + glm::vec3(0.0f, 5.0f, 0.0f);
             gubo.PointLights[i * 4 + 1].lightColor = glm::vec3(1.0f, 0.85f, 0.4f);
-            gubo.PointLights[i * 4 + 1].lightIntensity = 3.0f;
+            gubo.PointLights[i * 4 + 1].lightIntensity = lightIntensity;
 
             gubo.PointLights[i * 4 + 2].lightPosition = glm::vec3(93 - (24 * (i % 8)), 0.0, 85 - (24 * (i / 8))) + glm::vec3(0.0f, 5.0f, 1.0f);
             gubo.PointLights[i * 4 + 2].lightColor = glm::vec3(1.0f, 0.85f, 0.4f);
-            gubo.PointLights[i * 4 + 2].lightIntensity = 3.0f;
+            gubo.PointLights[i * 4 + 2].lightIntensity = lightIntensity;
 
             gubo.PointLights[i * 4 + 3].lightPosition = glm::vec3(84 - (24 * (i % 8)), 0.0, 93 - (24 * (i / 8))) + glm::vec3(0.0f, 5.0f, 0.0f);
             gubo.PointLights[i * 4 + 3].lightColor = glm::vec3(1.0f, 0.85f, 0.4f);
-            gubo.PointLights[i * 4 + 3].lightIntensity = 3.0f;
+            gubo.PointLights[i * 4 + 3].lightIntensity = lightIntensity;
         }
 
         DSGlobal.map(currentImage, &gubo, 0); // Maps the global uniform buffer object
@@ -1342,7 +1343,7 @@ protected:
         PizzeriaUbo.mMat = glm::translate(glm::mat4(1.0f),
                                           glm::vec3(84.0 - (24.0 * (28 % 8)), 0.0, 84 - (24 * (28 / 8))));
         PizzeriaUbo.mMat = glm::rotate(PizzeriaUbo.mMat, glm::radians(-45.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // Rotates the pizzeria
-        PizzeriaUbo.mMat = glm::scale(PizzeriaUbo.mMat, glm::vec3(1.8f, 1.8f, 1.8f)); // Scales the pizzeria
+        PizzeriaUbo.mMat = glm::scale(PizzeriaUbo.mMat, glm::vec3(1.5f, 1.5f, 1.5f)); // Scales the pizzeria
 
         // Calculates the MVP matrix for the pizzeria
         PizzeriaUbo.mvpMat = ViewPrj * PizzeriaUbo.mMat;
@@ -1389,6 +1390,10 @@ protected:
                         skyScraperUbos[currentIndex].mMat[counterSkyScraper[currentIndex]],
                         glm::radians(90.0f * (float)(i % 4)), // Rotation angle in degrees
                         glm::vec3(0.0f, 1.0f, 0.0f));         // Y-axis rotation
+
+                skyScraperUbos[currentIndex].mMat[counterSkyScraper[currentIndex]] = glm::scale(
+                        skyScraperUbos[currentIndex].mMat[counterSkyScraper[currentIndex]],
+                        glm::vec3(0.85f));
 
                 // Calculates the MVP matrix for the current skyscraper
                 skyScraperUbos[currentIndex].mvpMat[counterSkyScraper[currentIndex]] =
