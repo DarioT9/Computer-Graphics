@@ -9,6 +9,8 @@
 #include <algorithm>
 #include <random>
 #include <set>
+#include <cstdlib>
+#include <ctime>
 
 #define TOTAL_TILES 64
 #define NSKYSCRAPER 16
@@ -257,6 +259,7 @@ protected:
     DescriptorSetLayout DSLskyBox;      // Descriptor layout for the SkyBox
     DescriptorSetLayout DSLEmission;    // Descriptor layout for emission materials
     DescriptorSetLayout DSLLightBulb;   // Descriptor layout for LightBulb
+    DescriptorSetLayout DSLCylinderDelivery;    // Descriptor layout for CylinderDelivery
 
     // Vertex descriptors for defining the layout of vertex data for various objects
     VertexDescriptor VDScooter;         // Vertex descriptor for the Scooter model
@@ -269,7 +272,8 @@ protected:
     VertexDescriptor VDLampPost;        // Vertex descriptor for the LampPost model
     VertexDescriptor VDskyBox;          // Vertex descriptor for the SkyBox
     VertexDescriptor VDEmission;        // Vertex descriptor for the emission model
-    VertexDescriptor VDLightBulb;       // Vertex descriptor for the LightBulb    
+    VertexDescriptor VDLightBulb;       // Vertex descriptor for the LightBulb
+    VertexDescriptor VDCylinderDelivery;    // Vertex descriptor fot the CylinderDelivery
 
     // Pipelines for rendering the various objects
     Pipeline PScooter;                  // Pipeline for rendering the Scooter
@@ -283,6 +287,7 @@ protected:
     Pipeline PskyBox;                   // Pipeline for rendering the SkyBox
     Pipeline PEmission;                 // Pipeline for rendering the emission objects
     Pipeline PLightBulb;                // Pipeline for rendering the LightBulb
+    Pipeline PCylinderDelivery;         // Pipeline for rendering the CylinderDelivery
 
     // Models, textures, and descriptor sets for various objects
     DescriptorSet DSGlobal;             // Global descriptor set for uniforms like lighting and camera position
@@ -299,6 +304,7 @@ protected:
     Model MskyBox;                      // Model for the SkyBox
     Model Mmoon;                        // Model for the Moon (possibly for lighting)
     Model MLightBulb;                   // Model for the LightBulb
+    Model MCylinderDelivery;            // Model for the CylinderDelivery
 
     // Textures for the various objects in the scene
     Texture TScooterBaseColor, TScooterNormal, TScooterHeight, TScooterMetallic, TScooterRoughness, TScooterAmbientOcclusion; // Textures for the Scooter
@@ -311,6 +317,7 @@ protected:
     Texture TskyBox;                    // Texture for the SkyBox
     Texture Tmoon;                      // Texture for the Moon
     Texture TLightBulb;                 // Texture for the LightBulb
+    Texture TCylinderDelivery;          // Texture for the CylinderDelivery
 
     // Descriptor sets for the various objects
     DescriptorSet DSScooter;            // Descriptor set for the Scooter
@@ -324,6 +331,7 @@ protected:
     DescriptorSet DSskyBox;             // Descriptor set for the SkyBox
     DescriptorSet DSmoon;               // Descriptor set for the Moon
     DescriptorSet DSLightBulb;          // Descriptor set for the LightBulb
+    DescriptorSet DSCylinderDelivery;   // Descriptor set for the CylinderDelivery
 
     // Other application parameters for scene management and camera controls
     int currScene = 0;                  // Current scene index
@@ -337,6 +345,11 @@ protected:
     glm::vec3 InitialPos;               // Initial position of the objects
     float Yaw = 0;                      // Yaw (rotation around the Y-axis)
     float Roll = 0;                     // Roll (rotation around the Z-axis)
+
+    // Game mechanics parameters
+    bool ReturnToPizzeria = false;      // Bool to check if the scooter must return to pizzeria
+    bool GetNewDeliveryPos = true;      // Bool to check if we need to generate a new delivery position
+    glm::vec3 DeliveryPos = glm::vec3(-2, 0, 0);              // Position where the delivery is at
 
     // Generates centers for the buildings, going from -84 to 84 with a step of 24
     std::vector<glm::vec2> centers = generateCenters(84, 24);
@@ -448,6 +461,13 @@ protected:
         DSLLightBulb.init(this, {
                 {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         VK_SHADER_STAGE_VERTEX_BIT,   sizeof(LightBulbUniformBufferObject), 1},
                 {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0,                                   1}
+        });
+
+        // Initialize Descriptor Set Layout for the CylinderDelivery object with uniform buffers and textures.
+        DSLCylinderDelivery.init(this, {
+                {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         VK_SHADER_STAGE_VERTEX_BIT,   sizeof(SingleObjectMatricesUniformBufferObject), 1},  // Uniform matrix for the pizzeria model
+                {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0,                                               1},  // Base Color Texture
+                {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(ObjectParametersUniformBufferObject),     1},
         });
 
         // Initialize the Vertex Descriptor for the Scooter model with vertex attributes and input rate.
@@ -594,6 +614,22 @@ protected:
                                         sizeof(glm::vec2), UV}
                         });
 
+        // Initialize the Vertex Descriptor for the City model with vertex attributes and input rate.
+        VDCylinderDelivery.init(this, {
+                {0, sizeof(ObjectVertex),
+                 VK_VERTEX_INPUT_RATE_VERTEX}  // Describes the size of the vertex and input rate
+        }, {
+                            // Describes the vertex attribute layout
+                            {0, 0, VK_FORMAT_R32G32B32_SFLOAT,    offsetof(ObjectVertex,
+                                                                           pos),                sizeof(glm::vec3), POSITION},  // Position (3 float components)
+                            {0, 1, VK_FORMAT_R32G32B32_SFLOAT,    offsetof(ObjectVertex,
+                                                                           norm),               sizeof(glm::vec3), NORMAL},    // Normal (3 float components)
+                            {0, 2, VK_FORMAT_R32G32_SFLOAT,       offsetof(ObjectVertex,
+                                                                           UV),                 sizeof(glm::vec2), UV},             // UV (2 float components)
+                            {0, 3, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(ObjectVertex,
+                                                                           tan),                sizeof(glm::vec4), TANGENT}  // Tangent (4 float components)
+                    });
+
         // Initialize the pipelines. Shaders are loaded from the specified files and use the newly defined VertexDescriptor.
         // Each pipeline is associated with its respective DescriptorSetLayout, such as DSLGlobal for the common descriptors
         // and specific layouts like DSLScooter, DSLCity, etc., for the unique objects.
@@ -617,6 +653,7 @@ protected:
                                     VK_CULL_MODE_BACK_BIT, false);
         PEmission.init(this, &VDEmission, "shaders/EmissionVert.spv", "shaders/EmissionFrag.spv", {&DSLEmission});
         PLightBulb.init(this, &VDEmission, "shaders/LightBulbVert.spv", "shaders/LightBulbFrag.spv", {&DSLLightBulb});
+        PCylinderDelivery.init(this, &VDCylinderDelivery, "shaders/NormalMapVert.spv", "shaders/CylinderFrag.spv", {&DSLGlobal, &DSLCylinderDelivery});
 
         // Load models from the specified paths. Each model is initialized with its respective VertexDescriptor and format.
         // The models include different objects such as scooter, city, soil, pizzeria, skyscrapers, trees, lamp post, and the skybox.
@@ -647,6 +684,7 @@ protected:
         MskyBox.init(this, &VDskyBox, "models/SkyBoxCube.obj", OBJ);
         Mmoon.init(this, &VDEmission, "models/Sphere.obj", OBJ);
         MLightBulb.init(this, &VDLightBulb, "models/LightBulb/lightbulb.gltf", GLTF);
+        MCylinderDelivery.init(this, &VDCylinderDelivery, "models/Cylinder/cylinder.gltf", GLTF);
 
         // Load textures for various objects. Each texture is initialized with the respective file path.
         // This includes textures for the scooter, city, soil, pizzeria, skyscrapers, trees, lamp post, skybox, and the moon.
@@ -694,13 +732,15 @@ protected:
 
         TLightBulb.init(this, "textures/LightBulb/lightbulbbase.png");
 
+        TCylinderDelivery.init(this, "textures/cylinder/cylinder.jpg");
+
         // Set up descriptor pool sizes based on the number of uniform blocks, textures, and descriptor sets required for the scene.
         DPSZs.uniformBlocksInPool =
-                1 + 2 + 2 + 2 + 2 + 8 + 8 + 2 + 1 + 1 + 1; // Total number of uniform blocks (for scooter, city, soil, pizzeria, etc.)
+                1 + 2 + 2 + 2 + 2 + 8 + 8 + 2 + 1 + 1 + 1 + 2; // Total number of uniform blocks (for scooter, city, soil, pizzeria, etc.)
         DPSZs.texturesInPool =
-                6 + 1 + 1 + 1 + 4 + 4 + 1 + 1 + 1 + 1; // Total number of textures (for scooter, city, soil, pizzeria, etc.)
+                6 + 1 + 1 + 1 + 4 + 4 + 1 + 1 + 1 + 1 + 1; // Total number of textures (for scooter, city, soil, pizzeria, etc.)
         DPSZs.setsInPool = 1 + 1 + 1 + 1 + 4 + 4 + 1 + 1 + 1 +
-                           1 + 1; // Total number of descriptor sets (for scooter, city, soil, pizzeria, etc.)
+                           1 + 1 + 1; // Total number of descriptor sets (for scooter, city, soil, pizzeria, etc.)
 
         std::cout << "Initialization completed!\n";
         std::cout << "Uniform Blocks in the Pool  : " << DPSZs.uniformBlocksInPool << "\n";
@@ -731,6 +771,7 @@ protected:
         PskyBox.create();
         PEmission.create();
         PLightBulb.create();
+        PCylinderDelivery.create();
 
         // Create descriptor sets for each object type with their respective textures.
         DSScooter.init(this, &DSLScooter,
@@ -749,6 +790,7 @@ protected:
         DSskyBox.init(this, &DSLskyBox, {&TskyBox});
         DSmoon.init(this, &DSLEmission, {&Tmoon});
         DSLightBulb.init(this, &DSLLightBulb, {&TLightBulb});
+        DSCylinderDelivery.init(this, &DSLCylinderDelivery, {&TCylinderDelivery});
 
         DSGlobal.init(this, &DSLGlobal, {});
     }
@@ -773,6 +815,7 @@ protected:
         PskyBox.cleanup();
         PEmission.cleanup();
         PLightBulb.cleanup();
+        PCylinderDelivery.cleanup();
 
         // Clean up the global descriptor set.
         DSGlobal.cleanup();
@@ -794,6 +837,7 @@ protected:
         DSskyBox.cleanup();
         DSmoon.cleanup();
         DSLightBulb.cleanup();
+        DSCylinderDelivery.cleanup();
     }
 
     // This function handles the cleanup of models, textures, and Descriptor Set Layouts.
@@ -851,6 +895,10 @@ protected:
         TLightBulb.cleanup();
         MLightBulb.cleanup();
 
+        // Clean up texture and model resources for the cylinderDelivery
+        TCylinderDelivery.cleanup();
+        MCylinderDelivery.cleanup();
+
         // Clean up the global descriptor set layout.
         DSLGlobal.cleanup();
 
@@ -871,6 +919,7 @@ protected:
         DSLskyBox.cleanup();
         DSLEmission.cleanup();
         DSLLightBulb.cleanup();
+        DSLCylinderDelivery.cleanup();
 
         // Clean up the pipelines by destroying them completely.
         PScooter.destroy();
@@ -889,6 +938,7 @@ protected:
         PskyBox.destroy();
         PEmission.destroy();
         PLightBulb.destroy();
+        PCylinderDelivery.destroy();
     }
 
     // This function handles the population of the command buffer.
@@ -1006,6 +1056,18 @@ protected:
         // Draw call for the pizzeria.
         vkCmdDrawIndexed(commandBuffer,
                          static_cast<uint32_t>(MPizzeria.indices.size()), 1, 0, 0, 0);
+
+        // Binding the pipeline and model for the cylinderDelivery.
+        PCylinderDelivery.bind(commandBuffer);                // Pipeline for the CylinderDelivery
+        MCylinderDelivery.bind(commandBuffer);                // Model for the CylinderDelivery
+
+        // Binding global and specific descriptor sets for the CylinderDelivery.
+        DSGlobal.bind(commandBuffer, PCylinderDelivery, 0, currentImage);    // Global Descriptor Set for the CylinderDelivery
+        DSCylinderDelivery.bind(commandBuffer, PCylinderDelivery, 1, currentImage);      // Specific Descriptor Set for the CylinderDelivery
+
+        // Draw call for the pizzeria.
+        vkCmdDrawIndexed(commandBuffer,
+                         static_cast<uint32_t>(MCylinderDelivery.indices.size()), 1, 0, 0, 0);
     }
 
 
@@ -1105,6 +1167,26 @@ protected:
         else {
             // If a collision is detected, the scooter stops moving.
             SteeringAng = 0.0f;
+        }
+
+        // Check actions in case scooter must return to Pizzeria
+        if(ReturnToPizzeria) {
+            if(isScooterInDelivery(ScooterPos, glm::vec3(-2, 0, 0), 3.0f)) {
+                ReturnToPizzeria = false;
+                GetNewDeliveryPos = true;
+            }
+        }
+
+        // Check actions in case scooter must go to a delivery point
+        if(!ReturnToPizzeria) {
+            if(GetNewDeliveryPos) {
+                DeliveryPos = getNewDeliveryPosition();
+                GetNewDeliveryPos = false;
+            }
+            if(isScooterInDelivery(ScooterPos, DeliveryPos, 3.0f)) {
+                DeliveryPos = glm::vec3(-2, 0, 0);
+                ReturnToPizzeria = true;
+            }
         }
 
         glm::mat4 Mv;
@@ -1229,6 +1311,9 @@ protected:
         SingleObjectMatricesUniformBufferObject PizzeriaUbo{};
         ObjectParametersUniformBufferObject PizzeriaParUbo{};
 
+        SingleObjectMatricesUniformBufferObject CylinderDeliveryUbo{};
+        ObjectParametersUniformBufferObject CylinderDeliveryParUbo{};
+
         SkyScraperMatricesUniformBufferObject skyScraperUbos[4]{};
         ObjectParametersUniformBufferObject skyScraperParamUbos[4]{};
 
@@ -1264,6 +1349,14 @@ protected:
 
         // Calculates the normal matrix for the pizzeria
         PizzeriaUbo.nMat = glm::inverse(glm::transpose(PizzeriaUbo.mMat));
+
+
+        // Updates the model matrix for the cylinderDelivery
+        CylinderDeliveryUbo.mMat = glm::translate(glm::mat4(1.0f), glm::vec3(DeliveryPos.x + 1.5f, DeliveryPos.y, DeliveryPos.z + 1.5f));
+        CylinderDeliveryUbo.mMat = glm::rotate(CylinderDeliveryUbo.mMat, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+        CylinderDeliveryUbo.mMat = glm::scale(CylinderDeliveryUbo.mMat, glm::vec3(1.0f, 1.0f, 100.0f));
+        CylinderDeliveryUbo.mvpMat = ViewPrj * CylinderDeliveryUbo.mMat;
+        CylinderDeliveryUbo.nMat = glm::inverse(glm::transpose(CylinderDeliveryUbo.mMat));
 
         int currentIndex = -1;
         int counterSkyScraper[4] = {0, 0, 0, 0}; // Array of counters for skyscrapers
@@ -1421,6 +1514,7 @@ protected:
         DSCity.map(currentImage, &CityUbo, 0);
         DSSoil.map(currentImage, &SoilUbo, 0);
         DSPizzeria.map(currentImage, &PizzeriaUbo, 0);
+        DSCylinderDelivery.map(currentImage, &CylinderDeliveryUbo, 0);
 
         // Maps the UBOs for the skyscrapers
         for(int i = 0; i < 4; i++) {
@@ -1446,6 +1540,7 @@ protected:
         CityParUbo.Pow = 200.0f;
         SoilParUbo.Pow = 200.0f;
         PizzeriaParUbo.Pow = 200.0f;
+        CylinderDeliveryParUbo.Pow = 200.0f;
         for (int i = 0; i < 4; ++i) {
             skyScraperParamUbos[i].Pow = 200.0f;
         }
@@ -1459,6 +1554,7 @@ protected:
         CityParUbo.Ang = 0.0f;
         SoilParUbo.Ang = 0.0f;
         PizzeriaParUbo.Ang = 0.0f;
+        CylinderDeliveryParUbo.Ang = 0.0f;
         for (int i = 0; i < 4; ++i) {
             skyScraperParamUbos[i].Ang = 0.0f;
         }
@@ -1472,6 +1568,7 @@ protected:
         DSCity.map(currentImage, &CityParUbo, 2);
         DSSoil.map(currentImage, &SoilParUbo, 2);
         DSPizzeria.map(currentImage, &PizzeriaParUbo, 2);
+        DSCylinderDelivery.map(currentImage, &CylinderDeliveryParUbo, 2);
 
         // Maps the material parameter UBOs for the skyscrapers
         for(int i = 0; i < 4; i++) {
@@ -1525,7 +1622,41 @@ protected:
                point.y >= barrier.min.y && point.y <= barrier.max.y;
     }
 
-/*    bool checkCollision(glm::vec3 newCenterPos, glm::vec3 realPos, float angle, float halfLength, float halfWidth) {
+    //Function that computes if the scooter is currently in the delivery area
+    bool isScooterInDelivery(glm::vec3 currentPosition, glm::vec3 targetPosition, float offset) {
+        // Computes the area limits
+        float minX = targetPosition.x;
+        float maxX = targetPosition.x + offset;
+        float minZ = targetPosition.z;
+        float maxZ = targetPosition.z + offset;
+
+        // Verifies if the position of the scooter is inside the area
+        bool isInsideX = currentPosition.x >= minX && currentPosition.x <= maxX;
+        bool isInsideZ = currentPosition.z >= minZ && currentPosition.z <= maxZ;
+
+        // Returns true only if the scooter is inside the area
+        return isInsideX && isInsideZ;
+    }
+
+    // Generate a new random delivery position
+    glm::vec3 getNewDeliveryPosition() {
+        // Imposta i limiti per index
+        const int minIndex = 1;
+        const int maxIndex = 7;
+
+        // Genera un index casuale tra minIndex e maxIndex
+        int randomIndexX = rand() % (maxIndex - minIndex + 1) + minIndex;
+        int randomIndexZ = rand() % (maxIndex - minIndex + 1) + minIndex;
+
+        // Calcola le coordinate x e z
+        float x = 84.0f - 24.0f * randomIndexX;
+        float z = 96.30f - 24.0f * randomIndexZ;
+
+        // Ritorna una nuova posizione con y fisso a 0.0f (o un altro valore se necessario)
+        return glm::vec3(x, 0.0f, z);
+    }
+
+    /*    bool checkCollision(glm::vec3 newCenterPos, glm::vec3 realPos, float angle, float halfLength, float halfWidth) {
         bool collision = false;  // Initialize collision flag
         // The direction of the scooter based on its orientation
         glm::vec2 direction(-sin(angle), cos(angle));

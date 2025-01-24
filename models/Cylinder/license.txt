@@ -1,0 +1,11 @@
+Model Information:
+* title:	Simple Cylinder
+* source:	https://sketchfab.com/3d-models/simple-cylinder-5b34294d00e9442cae4338e9aa20ceb7
+* author:	samuelcrevier (https://sketchfab.com/samuelcrevier12)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Simple Cylinder" (https://sketchfab.com/3d-models/simple-cylinder-5b34294d00e9442cae4338e9aa20ceb7) by samuelcrevier (https://sketchfab.com/samuelcrevier12) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
