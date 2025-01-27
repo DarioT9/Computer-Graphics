@@ -679,7 +679,7 @@ protected:
         for (int i = 0; i < NTYPETREE; ++i) {
             MTree[i].init(this, &VDTree[i], treeModelPaths[i], MGCG);
         }
-        MLampPost.init(this, &VDLampPost, "models/lamppost.mgcg", MGCG);
+        MLampPost.init(this, &VDLampPost, "models/LampPost/lampPost.obj", OBJ);
         MskyBox.init(this, &VDskyBox, "models/SkyBoxCube.obj", OBJ);
         Mmoon.init(this, &VDEmission, "models/Sphere.obj", OBJ);
         MLightBulb.init(this, &VDLightBulb, "models/LightBulb/lightbulb.gltf", GLTF);
@@ -723,7 +723,7 @@ protected:
             TTree[i].init(this, "textures/Textures_Vegetation.png");
         }
 
-        TLampPost.init(this, "textures/Textures_Skyscrapers.png");
+        TLampPost.init(this, "textures/LampPost/lampPost1.png");
 
         TskyBox.init(this, "textures/nightSkybox.jpg");
 
@@ -1303,7 +1303,7 @@ protected:
         DSmoon.map(currentImage, &emissionUbo, 0);
 
         LightBulbUniformBufferObject LightBulbUbo{};
-        LightBulbUbo.mvpMat[0] = ViewPrj * baseTr; 
+        LightBulbUbo.mvpMat[0] = ViewPrj * baseTr;
         LightBulbUbo.mvpMat[0] = glm::scale(LightBulbUbo.mvpMat[0], glm::vec3(100.0f, 100.0f, 100.0f));
 
         // Initializes matrices and parameters for different objects
@@ -1428,7 +1428,7 @@ protected:
             LampPostUbo.nMat[i * 4] = glm::inverse(glm::transpose(LampPostUbo.mMat[i * 4]));
 
             // Calculates the MVP matrix for the first lightbulb
-            LightBulbUbo.mvpMat[i * 4] = ViewPrj * LampPostUbo.mMat[i * 4]; 
+            LightBulbUbo.mvpMat[i * 4] = ViewPrj * LampPostUbo.mMat[i * 4];
             LightBulbUbo.mvpMat[i * 4] = glm::translate(LightBulbUbo.mvpMat[i * 4], glm::vec3(0.0f, 5.0f, 0.5f));
             LightBulbUbo.mvpMat[i * 4] = glm::rotate(LightBulbUbo.mvpMat[i * 4],  glm::radians(80.0f), glm::vec3(1.0f,0.0f,0.0f));
             LightBulbUbo.mvpMat[i * 4] = glm::scale(LightBulbUbo.mvpMat[i * 4], glm::vec3(2.0f, 2.0f, 2.0f));
@@ -1443,7 +1443,7 @@ protected:
             LampPostUbo.nMat[i * 4 + 1] = glm::inverse(glm::transpose(LampPostUbo.mMat[i * 4 + 1]));
 
             // Calculates the MVP matrix for the second lightbulb
-            LightBulbUbo.mvpMat[i * 4 + 1] = ViewPrj * LampPostUbo.mMat[i * 4 + 1]; 
+            LightBulbUbo.mvpMat[i * 4 + 1] = ViewPrj * LampPostUbo.mMat[i * 4 + 1];
             LightBulbUbo.mvpMat[i * 4 + 1] = glm::translate(LightBulbUbo.mvpMat[i * 4 + 1], glm::vec3(0.0f, 5.0f, 0.5f));
             LightBulbUbo.mvpMat[i * 4 + 1] = glm::rotate(LightBulbUbo.mvpMat[i * 4 + 1],  glm::radians(80.0f), glm::vec3(1.0f,0.0f,0.0f));
             LightBulbUbo.mvpMat[i * 4 + 1] = glm::scale(LightBulbUbo.mvpMat[i * 4 + 1], glm::vec3(2.0f, 2.0f, 2.0f));
@@ -1458,7 +1458,7 @@ protected:
             LampPostUbo.nMat[i * 4 + 2] = glm::inverse(glm::transpose(LampPostUbo.mMat[i * 4 + 2]));
 
             // Calculates the MVP matrix for the third lightbulb
-            LightBulbUbo.mvpMat[i * 4 + 2] = ViewPrj * LampPostUbo.mMat[i * 4 + 2]; 
+            LightBulbUbo.mvpMat[i * 4 + 2] = ViewPrj * LampPostUbo.mMat[i * 4 + 2];
             LightBulbUbo.mvpMat[i * 4 + 2] = glm::translate(LightBulbUbo.mvpMat[i * 4 + 2], glm::vec3(0.0f, 5.0f, 0.5f));
             LightBulbUbo.mvpMat[i * 4 + 2] = glm::rotate(LightBulbUbo.mvpMat[i * 4 + 2],  glm::radians(80.0f), glm::vec3(1.0f,0.0f,0.0f));
             LightBulbUbo.mvpMat[i * 4 + 2] = glm::scale(LightBulbUbo.mvpMat[i * 4 + 2], glm::vec3(2.0f, 2.0f, 2.0f));
@@ -1471,7 +1471,7 @@ protected:
             LampPostUbo.nMat[i * 4 + 3] = glm::inverse(glm::transpose(LampPostUbo.mMat[i * 4 + 3]));
 
             // Calculates the MVP matrix for the fourth lightbulb
-            LightBulbUbo.mvpMat[i * 4 + 3] = ViewPrj * LampPostUbo.mMat[i * 4 + 3]; 
+            LightBulbUbo.mvpMat[i * 4 + 3] = ViewPrj * LampPostUbo.mMat[i * 4 + 3];
             LightBulbUbo.mvpMat[i * 4 + 3] = glm::translate(LightBulbUbo.mvpMat[i * 4 + 3], glm::vec3(0.0f, 5.0f, 0.5f));
             LightBulbUbo.mvpMat[i * 4 + 3] = glm::rotate(LightBulbUbo.mvpMat[i * 4 + 3],  glm::radians(80.0f), glm::vec3(1.0f,0.0f,0.0f));
             LightBulbUbo.mvpMat[i * 4 + 3] = glm::scale(LightBulbUbo.mvpMat[i * 4 + 3], glm::vec3(2.0f, 2.0f, 2.0f));
