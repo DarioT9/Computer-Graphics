@@ -4,20 +4,18 @@
 
 #include "modules/TextMaker.hpp"
 
-#include <thread>
 #include <chrono>
 #include <algorithm>
 #include <random>
 #include <set>
 #include <cstdlib>
-#include <ctime>
 
 #define TOTAL_TILES 64
 #define NSKYSCRAPER 16
+#define NTYPESKYSCRAPER 4
 #define NTREE 64
+#define NTYPETREE 4
 #define NLAMPPOST 256
-
-#define PI 3.14159265359
 
 // TextMaker instance for creating text
 TextMaker txt;
@@ -253,8 +251,8 @@ protected:
     DescriptorSetLayout DSLCity;        // Descriptor layout for the City model
     DescriptorSetLayout DSLSoil;        // Descriptor layout for the Soil model
     DescriptorSetLayout DSLPizzeria;    // Descriptor layout for the Pizzeria model
-    DescriptorSetLayout DSLSkyScraper[4]; // Descriptor layouts for the 4 skyscrapers
-    DescriptorSetLayout DSLTree[4];     // Descriptor layouts for the 4 trees
+    DescriptorSetLayout DSLSkyScraper[NTYPESKYSCRAPER]; // Descriptor layouts for the 4 skyscrapers
+    DescriptorSetLayout DSLTree[NTYPETREE];     // Descriptor layouts for the 4 trees
     DescriptorSetLayout DSLLampPost;    // Descriptor layout for LampPost
     DescriptorSetLayout DSLskyBox;      // Descriptor layout for the SkyBox
     DescriptorSetLayout DSLEmission;    // Descriptor layout for emission materials
@@ -267,8 +265,8 @@ protected:
     VertexDescriptor VDCity;            // Vertex descriptor for the City model
     VertexDescriptor VDSoil;            // Vertex descriptor for the Soil model
     VertexDescriptor VDPizzeria;        // Vertex descriptor for the Pizzeria model
-    VertexDescriptor VDSkyScraper[4];   // Vertex descriptors for the 4 skyscrapers
-    VertexDescriptor VDTree[4];         // Vertex descriptors for the 4 trees
+    VertexDescriptor VDSkyScraper[NTYPESKYSCRAPER];   // Vertex descriptors for the 4 skyscrapers
+    VertexDescriptor VDTree[NTYPETREE];         // Vertex descriptors for the 4 trees
     VertexDescriptor VDLampPost;        // Vertex descriptor for the LampPost model
     VertexDescriptor VDskyBox;          // Vertex descriptor for the SkyBox
     VertexDescriptor VDEmission;        // Vertex descriptor for the emission model
@@ -281,8 +279,8 @@ protected:
     Pipeline PCity;                     // Pipeline for rendering the City
     Pipeline PSoil;                     // Pipeline for rendering the Soil
     Pipeline PPizzeria;                 // Pipeline for rendering the Pizzeria
-    Pipeline PSkyScraper[4];            // Pipelines for rendering the 4 skyscrapers
-    Pipeline PTree[4];                  // Pipelines for rendering the 4 trees
+    Pipeline PSkyScraper[NTYPESKYSCRAPER];            // Pipelines for rendering the 4 skyscrapers
+    Pipeline PTree[NTYPETREE];                  // Pipelines for rendering the 4 trees
     Pipeline PLampPost;                 // Pipeline for rendering the LampPost
     Pipeline PskyBox;                   // Pipeline for rendering the SkyBox
     Pipeline PEmission;                 // Pipeline for rendering the emission objects
@@ -298,8 +296,8 @@ protected:
     Model MCity;                        // Model for the City
     Model MSoil;                        // Model for the Soil
     Model MPizzeria;                    // Model for the Pizzeria
-    Model MSkyScraper[4];               // Models for the 4 skyscrapers
-    Model MTree[4];                     // Models for the 4 trees
+    Model MSkyScraper[NTYPESKYSCRAPER];               // Models for the 4 skyscrapers
+    Model MTree[NTYPETREE];                     // Models for the 4 trees
     Model MLampPost;                    // Model for the LampPost
     Model MskyBox;                      // Model for the SkyBox
     Model Mmoon;                        // Model for the Moon (possibly for lighting)
@@ -311,8 +309,8 @@ protected:
     Texture TCity;                      // Texture for the City
     Texture TSoil;                      // Texture for the Soil
     Texture TPizzeria;                  // Texture for the Pizzeria
-    Texture TSkyScraper[4];             // Textures for the 4 skyscrapers
-    Texture TTree[4];                   // Textures for the 4 trees
+    Texture TSkyScraper[NTYPESKYSCRAPER];             // Textures for the 4 skyscrapers
+    Texture TTree[NTYPETREE];                   // Textures for the 4 trees
     Texture TLampPost;                  // Texture for the LampPost
     Texture TskyBox;                    // Texture for the SkyBox
     Texture Tmoon;                      // Texture for the Moon
@@ -325,8 +323,8 @@ protected:
     DescriptorSet DSCity;               // Descriptor set for the City
     DescriptorSet DSSoil;               // Descriptor set for the Soil
     DescriptorSet DSPizzeria;           // Descriptor set for the Pizzeria
-    DescriptorSet DSSkyScraper[4];      // Descriptor sets for the 4 skyscrapers
-    DescriptorSet DSTree[4];            // Descriptor sets for the 4 trees
+    DescriptorSet DSSkyScraper[NTYPESKYSCRAPER];      // Descriptor sets for the 4 skyscrapers
+    DescriptorSet DSTree[NTYPETREE];            // Descriptor sets for the 4 trees
     DescriptorSet DSLampPost;           // Descriptor set for the LampPost
     DescriptorSet DSskyBox;             // Descriptor set for the SkyBox
     DescriptorSet DSmoon;               // Descriptor set for the Moon
@@ -421,7 +419,7 @@ protected:
         });
 
         // Initialize Descriptor Set Layouts for multiple SkyScraper models with appropriate bindings.
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < NTYPESKYSCRAPER; i++) {
             DSLSkyScraper[i].init(this, {
                     {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         VK_SHADER_STAGE_VERTEX_BIT,   sizeof(SkyScraperMatricesUniformBufferObject), 1},
                     {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0,                                             1},
@@ -430,7 +428,7 @@ protected:
         }
 
         // Initialize Descriptor Set Layouts for multiple Tree models with appropriate bindings.
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < NTYPETREE; i++) {
             DSLTree[i].init(this, {
                     {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         VK_SHADER_STAGE_VERTEX_BIT,   sizeof(TreeMatricesUniformBufferObject),     1},  // Uniform matrix for the tree model
                     {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0,                                           1},  // Texture for the tree model
@@ -469,6 +467,7 @@ protected:
                 {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0,                                               1},  // Base Color Texture
                 {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(ObjectParametersUniformBufferObject),     1},
         });
+
 
         // Initialize the Vertex Descriptor for the Scooter model with vertex attributes and input rate.
         VDScooter.init(this, {
@@ -535,7 +534,7 @@ protected:
                         });
 
         // Initialize the Vertex Descriptors for multiple SkyScraper models with vertex attributes and input rate.
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < NTYPESKYSCRAPER; i++) {
             VDSkyScraper[i].init(this, {
                     {0, sizeof(ObjectVertex),
                      VK_VERTEX_INPUT_RATE_VERTEX}  // Describes the size of the vertex and input rate
@@ -553,7 +552,7 @@ protected:
         }
 
         // Initialize the Vertex Descriptors for multiple Tree models with vertex attributes and input rate.
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < NTYPETREE; i++) {
             VDTree[i].init(this, {
                     {0, sizeof(ObjectVertex),
                      VK_VERTEX_INPUT_RATE_VERTEX}  // Describes the size of the vertex and input rate
@@ -639,11 +638,11 @@ protected:
         PSoil.init(this, &VDSoil, "shaders/NormalMapVert.spv", "shaders/SoilFrag.spv", {&DSLGlobal, &DSLSoil});
         PPizzeria.init(this, &VDPizzeria, "shaders/NormalMapVert.spv", "shaders/PizzeriaFrag.spv",
                        {&DSLGlobal, &DSLPizzeria});
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < NTYPESKYSCRAPER; i++) {
             PSkyScraper[i].init(this, &VDSkyScraper[i], "shaders/SkyScraperVert.spv", "shaders/SkyScraperFrag.spv",
                                 {&DSLGlobal, &DSLSkyScraper[i]});
         }
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < NTYPETREE; i++) {
             PTree[i].init(this, &VDTree[i], "shaders/TreeVert.spv", "shaders/TreeFrag.spv", {&DSLGlobal, &DSLTree[i]});
         }
         PLampPost.init(this, &VDLampPost, "shaders/LampPostVert.spv", "shaders/LampPostFrag.spv",
@@ -661,23 +660,23 @@ protected:
         MCity.init(this, &VDCity, "models/road.obj", OBJ);
         MSoil.init(this, &VDSoil, "models/sand3.obj", OBJ);
         MPizzeria.init(this, &VDPizzeria, "models/Pizzeria/pizzeria.obj", OBJ);
-        const char *modelPaths[4] = {
+        const char *modelPaths[NTYPESKYSCRAPER] = {
                 "models/apartment_1.mgcg",
                 "models/apartment_2.mgcg",
                 "models/apartment_3.mgcg",
                 "models/apartment_4.mgcg"
         };
-        for (int i = 0; i < 4; ++i) {
+        for (int i = 0; i < NTYPESKYSCRAPER; ++i) {
             MSkyScraper[i].init(this, &VDSkyScraper[i], modelPaths[i], MGCG);
         }
-        const char *treeModelPaths[4] = {
+        const char *treeModelPaths[NTYPETREE] = {
                 "models/vegetation.021.mgcg",
                 "models/vegetation.023.mgcg",
                 "models/vegetation.024.mgcg",
                 "models/vegetation.025.mgcg"
         };
 
-        for (int i = 0; i < 4; ++i) {
+        for (int i = 0; i < NTYPETREE; ++i) {
             MTree[i].init(this, &VDTree[i], treeModelPaths[i], MGCG);
         }
         MLampPost.init(this, &VDLampPost, "models/lamppost.mgcg", MGCG);
@@ -717,10 +716,10 @@ protected:
 
         TPizzeria.init(this, "textures/pizzeria/TPizzeria.jpeg");
 
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < NTYPESKYSCRAPER; i++) {
             TSkyScraper[i].init(this, "textures/Textures_Skyscrapers.png");
         }
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < NTYPETREE; i++) {
             TTree[i].init(this, "textures/Textures_Vegetation.png");
         }
 
@@ -761,10 +760,10 @@ protected:
         PCity.create();
         PSoil.create();
         PPizzeria.create();
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < NTYPESKYSCRAPER; i++) {
             PSkyScraper[i].create();
         }
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < NTYPETREE; i++) {
             PTree[i].create();
         }
         PLampPost.create();
@@ -780,10 +779,10 @@ protected:
         DSCity.init(this, &DSLCity, {&TCity});
         DSSoil.init(this, &DSLSoil, {&TSoil});
         DSPizzeria.init(this, &DSLPizzeria, {&TPizzeria});
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < NTYPESKYSCRAPER; i++) {
             DSSkyScraper[i].init(this, &DSLSkyScraper[i], {&TSkyScraper[i]});
         }
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < NTYPETREE; i++) {
             DSTree[i].init(this, &DSLTree[i], {&TTree[i]});
         }
         DSLampPost.init(this, &DSLLampPost, {&TLampPost});
@@ -803,11 +802,11 @@ protected:
         PCity.cleanup();
         PSoil.cleanup();
         PPizzeria.cleanup();
-        for(int i = 0; i < 4; i++)
+        for(int i = 0; i < NTYPESKYSCRAPER; i++)
         {
             PSkyScraper[i].cleanup();
         }
-        for(int i = 0; i < 4; i++)
+        for(int i = 0; i < NTYPETREE; i++)
         {
             PTree[i].cleanup();
         }
@@ -825,11 +824,11 @@ protected:
         DSCity.cleanup();
         DSSoil.cleanup();
         DSPizzeria.cleanup();
-        for(int i = 0; i < 4; i++)
+        for(int i = 0; i < NTYPESKYSCRAPER; i++)
         {
             DSSkyScraper[i].cleanup();
         }
-        for(int i = 0; i < 4; i++)
+        for(int i = 0; i < NTYPETREE; i++)
         {
             DSTree[i].cleanup();
         }
@@ -866,14 +865,14 @@ protected:
         MPizzeria.cleanup();
 
         // Clean up textures and models for skyscrapers.
-        for(int i = 0; i < 4; i++)
+        for(int i = 0; i < NTYPESKYSCRAPER; i++)
         {
             TSkyScraper[i].cleanup();
             MSkyScraper[i].cleanup();
         }
 
         // Clean up textures and models for trees.
-        for(int i = 0; i < 4; i++)
+        for(int i = 0; i < NTYPETREE; i++)
         {
             TTree[i].cleanup();
             MTree[i].cleanup();
@@ -907,11 +906,11 @@ protected:
         DSLCity.cleanup();
         DSLSoil.cleanup();
         DSLPizzeria.cleanup();
-        for(int i = 0; i < 4; i++)
+        for(int i = 0; i < NTYPESKYSCRAPER; i++)
         {
             DSLSkyScraper[i].cleanup();
         }
-        for(int i = 0; i < 4; i++)
+        for(int i = 0; i < NTYPETREE; i++)
         {
             DSLTree[i].cleanup();
         }
@@ -926,11 +925,11 @@ protected:
         PCity.destroy();
         PSoil.destroy();
         PPizzeria.destroy();
-        for(int i = 0; i < 4; i++)
+        for(int i = 0; i < NTYPESKYSCRAPER; i++)
         {
             PSkyScraper[i].destroy();
         }
-        for(int i = 0; i < 4; i++)
+        for(int i = 0; i < NTYPETREE; i++)
         {
             PTree[i].destroy();
         }
@@ -979,7 +978,7 @@ protected:
         vkCmdDrawIndexed(commandBuffer,
                          static_cast<uint32_t>(MSoil.indices.size()), 1, 0, 0, 0);
 
-        for(int i = 0; i < 4; i++)
+        for(int i = 0; i < NTYPESKYSCRAPER; i++)
         {
             // Binding the pipeline and model for the skyscraper.
             PSkyScraper[i].bind(commandBuffer);           // Pipeline for the skyscraper
@@ -994,7 +993,7 @@ protected:
                              static_cast<uint32_t>(MSkyScraper[i].indices.size()), NSKYSCRAPER, 0, 0, 0);
         }
 
-        for(int i = 0; i < 4; i++)
+        for(int i = 0; i < NTYPETREE; i++)
         {
             // Binding the pipeline and model for the trees.
             PTree[i].bind(commandBuffer);           // Pipeline for the tree
@@ -1169,9 +1168,14 @@ protected:
             SteeringAng = 0.0f;
         }
 
+        glm::vec3 deliveryStartPosition = glm::vec3(-2, 0, 0);
+        float deliveryOffset = 3.0f;
+
         // Check actions in case scooter must return to Pizzeria
         if(ReturnToPizzeria) {
-            if(isScooterInDelivery(ScooterPos, glm::vec3(-2, 0, 0), 3.0f)) {
+            // Check if the scooter has returned to the pizzeria
+            if(isScooterInDelivery(ScooterPos, deliveryStartPosition, deliveryOffset)) {
+                // Aks for a new delivery position
                 ReturnToPizzeria = false;
                 GetNewDeliveryPos = true;
             }
@@ -1179,12 +1183,14 @@ protected:
 
         // Check actions in case scooter must go to a delivery point
         if(!ReturnToPizzeria) {
+            // Check if a new delivery position is required
             if(GetNewDeliveryPos) {
                 DeliveryPos = getNewDeliveryPosition();
                 GetNewDeliveryPos = false;
             }
-            if(isScooterInDelivery(ScooterPos, DeliveryPos, 3.0f)) {
-                DeliveryPos = glm::vec3(-2, 0, 0);
+            // Check if the scooter is in the delivery point
+            if(isScooterInDelivery(ScooterPos, DeliveryPos, deliveryOffset)) {
+                DeliveryPos = deliveryStartPosition;
                 ReturnToPizzeria = true;
             }
         }
@@ -1268,23 +1274,24 @@ protected:
         gubo.eyePos = glm::vec3(glm::inverse(ViewMatrix) * glm::vec4(0, 3, 0, 1)); // Sets eye position
 
         // Setting point lights
-        float lightIntensity = 2.5f;
+        float LampPostLightIntensity = 2.5f;
+        glm::vec3 LampPostLightColor = glm::vec3(1.0f, 0.85f, 0.4f);
         for(int i = 0; i < NLAMPPOST/4; i++) {
             gubo.PointLights[i * 4].lightPosition = glm::vec3(75 - (24 * (i % 8)), 0.0, 85 - (24 * (i / 8))) + glm::vec3(0.0f, 5.0f, 1.0f);
-            gubo.PointLights[i * 4].lightColor = glm::vec3(1.0f, 0.85f, 0.4f);
-            gubo.PointLights[i * 4].lightIntensity = lightIntensity;
+            gubo.PointLights[i * 4].lightColor = LampPostLightColor;
+            gubo.PointLights[i * 4].lightIntensity = LampPostLightIntensity;
 
             gubo.PointLights[i * 4 + 1].lightPosition = glm::vec3(84 - (24 * (i % 8)), 0.0, 75 - (24 * (i / 8))) + glm::vec3(0.0f, 5.0f, 0.0f);
-            gubo.PointLights[i * 4 + 1].lightColor = glm::vec3(1.0f, 0.85f, 0.4f);
-            gubo.PointLights[i * 4 + 1].lightIntensity = lightIntensity;
+            gubo.PointLights[i * 4 + 1].lightColor = LampPostLightColor;
+            gubo.PointLights[i * 4 + 1].lightIntensity = LampPostLightIntensity;
 
             gubo.PointLights[i * 4 + 2].lightPosition = glm::vec3(93 - (24 * (i % 8)), 0.0, 85 - (24 * (i / 8))) + glm::vec3(0.0f, 5.0f, 1.0f);
-            gubo.PointLights[i * 4 + 2].lightColor = glm::vec3(1.0f, 0.85f, 0.4f);
-            gubo.PointLights[i * 4 + 2].lightIntensity = lightIntensity;
+            gubo.PointLights[i * 4 + 2].lightColor = LampPostLightColor;
+            gubo.PointLights[i * 4 + 2].lightIntensity = LampPostLightIntensity;
 
             gubo.PointLights[i * 4 + 3].lightPosition = glm::vec3(84 - (24 * (i % 8)), 0.0, 93 - (24 * (i / 8))) + glm::vec3(0.0f, 5.0f, 0.0f);
-            gubo.PointLights[i * 4 + 3].lightColor = glm::vec3(1.0f, 0.85f, 0.4f);
-            gubo.PointLights[i * 4 + 3].lightIntensity = lightIntensity;
+            gubo.PointLights[i * 4 + 3].lightColor = LampPostLightColor;
+            gubo.PointLights[i * 4 + 3].lightIntensity = LampPostLightIntensity;
         }
 
         DSGlobal.map(currentImage, &gubo, 0); // Maps the global uniform buffer object
@@ -1315,11 +1322,11 @@ protected:
         SingleObjectMatricesUniformBufferObject CylinderDeliveryUbo{};
         ObjectParametersUniformBufferObject CylinderDeliveryParUbo{};
 
-        SkyScraperMatricesUniformBufferObject skyScraperUbos[4]{};
-        ObjectParametersUniformBufferObject skyScraperParamUbos[4]{};
+        SkyScraperMatricesUniformBufferObject skyScraperUbos[NTYPESKYSCRAPER]{};
+        ObjectParametersUniformBufferObject skyScraperParamUbos[NTYPESKYSCRAPER]{};
 
-        TreeMatricesUniformBufferObject treeUbos[4];
-        ObjectParametersUniformBufferObject treeParamUbos[4];
+        TreeMatricesUniformBufferObject treeUbos[NTYPETREE];
+        ObjectParametersUniformBufferObject treeParamUbos[NTYPETREE];
 
         LampPostMatricesUniformBufferObject LampPostUbo{};
         ObjectParametersUniformBufferObject LampPostParUbo{};
@@ -1355,12 +1362,12 @@ protected:
         // Updates the model matrix for the cylinderDelivery
         CylinderDeliveryUbo.mMat = glm::translate(glm::mat4(1.0f), glm::vec3(DeliveryPos.x + 1.5f, DeliveryPos.y, DeliveryPos.z + 1.5f));
         CylinderDeliveryUbo.mMat = glm::rotate(CylinderDeliveryUbo.mMat, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-        CylinderDeliveryUbo.mMat = glm::scale(CylinderDeliveryUbo.mMat, glm::vec3(1.0f, 1.0f, 100.0f));
+        CylinderDeliveryUbo.mMat = glm::scale(CylinderDeliveryUbo.mMat, glm::vec3(1.0f, 1.0f, 100.0f));     // Scale on the z axis to make it high enough
         CylinderDeliveryUbo.mvpMat = ViewPrj * CylinderDeliveryUbo.mMat;
         CylinderDeliveryUbo.nMat = glm::inverse(glm::transpose(CylinderDeliveryUbo.mMat));
 
         int currentIndex = -1;
-        int counterSkyScraper[4] = {0, 0, 0, 0}; // Array of counters for skyscrapers
+        int counterSkyScraper[NTYPESKYSCRAPER] = {0, 0, 0, 0}; // Array of counters for skyscrapers
 
         // Loops over each skyscraper and updates their matrices
         for (int i = 0; i < NSKYSCRAPER * 4; i++) {
@@ -1376,7 +1383,7 @@ protected:
                 }
             }
 
-            // Excludes the pizzeria tile
+            // Excludes the pizzeria tile (28th one)
             if (i == 28) {
                 currentIndex = -1;
             }
@@ -1478,12 +1485,12 @@ protected:
         int* indicesTree[4] = {indicesTree1, indicesTree2, indicesTree3, indicesTree4}; // Array of indices for trees
 
         // Iterates over all tree indices and updates the matrices for each tree
-        for (int i = 0; i < 64; ++i) {
+        for (int i = 0; i < NTREE; ++i) {
             currentIndex = -1;
 
             // Determines the current tree index
-            for (int j = 0; j < 4; ++j) {
-                for (int k = 0; k < 16; ++k) {
+            for (int j = 0; j < NTYPETREE; ++j) {
+                for (int k = 0; k < NTREE / NTYPETREE; ++k) {
                     if (indicesTree[j][k] == i) {
                         currentIndex = j;
                         break;
@@ -1492,7 +1499,7 @@ protected:
                 if (currentIndex != -1) break;
             }
 
-            // Excludes the pizzeria tile from tree updates
+            // Excludes the pizzeria tile from tree updates (28th one)
             if (i == 28) {
                 currentIndex = -1;
             }
@@ -1505,7 +1512,6 @@ protected:
         }
 
         // Sets the scale factor for the SkyBox and adjusts its translation to center it in the scene
-//        float SkyBox_scale_factor = 98.0f;
         float SkyBox_scale_factor = 1000.0f;
         glm::vec3 skybox_center_offset = glm::vec3(0, 0, -5); // Adjust the translation values to center the SkyBox
 
@@ -1522,12 +1528,12 @@ protected:
         DSCylinderDelivery.map(currentImage, &CylinderDeliveryUbo, 0);
 
         // Maps the UBOs for the skyscrapers
-        for(int i = 0; i < 4; i++) {
+        for(int i = 0; i < NTYPESKYSCRAPER; i++) {
             DSSkyScraper[i].map(currentImage, &skyScraperUbos[i], 0);
         }
 
         // Maps the UBOs for the trees
-        for(int i = 0; i < 4; i++) {
+        for(int i = 0; i < NTYPETREE; i++) {
             DSTree[i].map(currentImage, &treeUbos[i], 0);
         }
 
@@ -1541,32 +1547,34 @@ protected:
         DSskyBox.map(currentImage, &SkyBoxUbo, 0);
 
         // Sets the specular power for each material's uniform buffer object
-        ScooterParUbo.Pow = 200.0f;
-        CityParUbo.Pow = 200.0f;
-        SoilParUbo.Pow = 200.0f;
-        PizzeriaParUbo.Pow = 200.0f;
-        CylinderDeliveryParUbo.Pow = 200.0f;
-        for (int i = 0; i < 4; ++i) {
-            skyScraperParamUbos[i].Pow = 200.0f;
+        float defaultPow = 200.0f;
+        ScooterParUbo.Pow = defaultPow;
+        CityParUbo.Pow = defaultPow;
+        SoilParUbo.Pow = defaultPow;
+        PizzeriaParUbo.Pow = defaultPow;
+        CylinderDeliveryParUbo.Pow = defaultPow;
+        for (int i = 0; i < NTYPESKYSCRAPER; ++i) {
+            skyScraperParamUbos[i].Pow = defaultPow;
         }
-        for (int i = 0; i < 4; ++i) {
-            treeParamUbos[i].Pow = 200.0f;
+        for (int i = 0; i < NTYPETREE; ++i) {
+            treeParamUbos[i].Pow = defaultPow;
         }
-        LampPostParUbo.Pow = 200.0f;
+        LampPostParUbo.Pow = defaultPow;
 
         // Sets the texture angle parameter for each object based on time
-        ScooterParUbo.Ang = 0.0f;
-        CityParUbo.Ang = 0.0f;
-        SoilParUbo.Ang = 0.0f;
-        PizzeriaParUbo.Ang = 0.0f;
-        CylinderDeliveryParUbo.Ang = 0.0f;
-        for (int i = 0; i < 4; ++i) {
-            skyScraperParamUbos[i].Ang = 0.0f;
+        float defaultAngle = 0.0f;
+        ScooterParUbo.Ang = defaultAngle;
+        CityParUbo.Ang = defaultAngle;
+        SoilParUbo.Ang = defaultAngle;
+        PizzeriaParUbo.Ang = defaultAngle;
+        CylinderDeliveryParUbo.Ang = defaultAngle;
+        for (int i = 0; i < NTYPESKYSCRAPER; ++i) {
+            skyScraperParamUbos[i].Ang = defaultAngle;
         }
-        for (int i = 0; i < 4; ++i) {
-            treeParamUbos[i].Ang = 0.0f;
+        for (int i = 0; i < NTYPETREE; ++i) {
+            treeParamUbos[i].Ang = defaultAngle;
         }
-        LampPostParUbo.Ang = 0.0f;
+        LampPostParUbo.Ang = defaultAngle;
 
         // Maps the material parameter UBOs for each object to the corresponding DSL bindings
         DSScooter.map(currentImage, &ScooterParUbo, 7);
@@ -1576,12 +1584,12 @@ protected:
         DSCylinderDelivery.map(currentImage, &CylinderDeliveryParUbo, 2);
 
         // Maps the material parameter UBOs for the skyscrapers
-        for(int i = 0; i < 4; i++) {
+        for(int i = 0; i < NTYPESKYSCRAPER; i++) {
             DSSkyScraper[i].map(currentImage, &skyScraperParamUbos[i], 2);
         }
 
         // Maps the material parameter UBOs for the trees
-        for(int i = 0; i < 4; i++) {
+        for(int i = 0; i < NTYPETREE; i++) {
             DSTree[i].map(currentImage, &treeParamUbos[i], 2);
         }
 
@@ -1645,133 +1653,21 @@ protected:
 
     // Generate a new random delivery position
     glm::vec3 getNewDeliveryPosition() {
-        // Imposta i limiti per index
+        // Set the limits for index
         const int minIndex = 1;
         const int maxIndex = 7;
 
-        // Genera un index casuale tra minIndex e maxIndex
+        // Generate a casual index between minIndex and maxIndex
         int randomIndexX = rand() % (maxIndex - minIndex + 1) + minIndex;
         int randomIndexZ = rand() % (maxIndex - minIndex + 1) + minIndex;
 
-        // Calcola le coordinate x e z
+        // Computes the x and z coordinates
         float x = 84.0f - 24.0f * randomIndexX;
         float z = 96.30f - 24.0f * randomIndexZ;
 
-        // Ritorna una nuova posizione con y fisso a 0.0f (o un altro valore se necessario)
+        // Returns a new position
         return glm::vec3(x, 0.0f, z);
     }
-
-    /*    bool checkCollision(glm::vec3 newCenterPos, glm::vec3 realPos, float angle, float halfLength, float halfWidth) {
-        bool collision = false;  // Initialize collision flag
-        // The direction of the scooter based on its orientation
-        glm::vec2 direction(-sin(angle), cos(angle));
-
-        // Calculate the points in front and behind the center position
-//        glm::vec2 frontPoint = glm::vec2(newCenterPos.x, newCenterPos.z) + halfLength * direction;
-//        glm::vec2 backPoint = glm::vec2(newCenterPos.x, newCenterPos.z) - halfLength * direction;
-        glm::vec2 frontLeftPoint = glm::vec2(newCenterPos.x, newCenterPos.z) +
-                halfLength * direction + halfWidth * glm::vec2(-direction.y, direction.x);
-        glm::vec2 frontRightPoint = glm::vec2(newCenterPos.x, newCenterPos.z) +
-                halfLength * direction + halfWidth * glm::vec2(direction.y, -direction.x);
-        glm::vec2 backLeftPoint = glm::vec2(newCenterPos.x, newCenterPos.z) -
-                halfLength * direction + halfWidth * glm::vec2(-direction.y, direction.x);
-        glm::vec2 backRightPoint = glm::vec2(newCenterPos.x, newCenterPos.z) -
-                halfLength * direction + halfWidth * glm::vec2(direction.y, -direction.x);
-
-        // Check if the scooter is outside the external barriers
-//        if (
-//                frontPoint.x <= externalBarriers.min.x ||
-//                frontPoint.x >= externalBarriers.max.x ||
-//                frontPoint.y <= externalBarriers.min.y ||
-//                frontPoint.y >= externalBarriers.max.y ||
-//                backPoint.x <= externalBarriers.min.x ||
-//                backPoint.x >= externalBarriers.max.x ||
-//                backPoint.y <= externalBarriers.min.y ||
-//                backPoint.y >= externalBarriers.max.y
-//                )
-        if (
-                frontLeftPoint.x <= externalBarriers.min.x ||
-                frontLeftPoint.x >= externalBarriers.max.x ||
-                frontLeftPoint.y <= externalBarriers.min.y ||
-                frontLeftPoint.y >= externalBarriers.max.y ||
-                frontRightPoint.x <= externalBarriers.min.x ||
-                frontRightPoint.x >= externalBarriers.max.x ||
-                frontRightPoint.y <= externalBarriers.min.y ||
-                frontRightPoint.y >= externalBarriers.max.y ||
-                backLeftPoint.x <= externalBarriers.min.x ||
-                backLeftPoint.x >= externalBarriers.max.x ||
-                backLeftPoint.y <= externalBarriers.min.y ||
-                backLeftPoint.y >= externalBarriers.max.y ||
-                backRightPoint.x <= externalBarriers.min.x ||
-                backRightPoint.x >= externalBarriers.max.x ||
-                backRightPoint.y <= externalBarriers.min.y ||
-                backRightPoint.y >= externalBarriers.max.y
-        )
-        {
-            collision = allowCollisionMovement(newCenterPos, realPos, true, nullptr);
-        }
-
-        if (!collision)
-        {
-            // Check for collisions with internal barriers for both front and back points
-
-            // Check for collisions with internal barriers for both front and back points
-            for (const auto& barrier : barriers) {
-                //            if ((frontPoint.x >= barrier.min.x && frontPoint.x <= barrier.max.x &&
-                //                 frontPoint.y >= barrier.min.y && frontPoint.y <= barrier.max.y) || // Check if front point is inside barrier
-                //                (backPoint.x >= barrier.min.x && backPoint.x <= barrier.max.x &&
-                //                 backPoint.y >= barrier.min.y && backPoint.y <= barrier.max.y))     // Check if back point is inside barrier
-
-                if (
-                        frontLeftPoint.x >= barrier.min.x && frontLeftPoint.x <= barrier.max.x &&
-                        frontLeftPoint.y >= barrier.min.y && frontLeftPoint.y <= barrier.max.y ||
-                        frontRightPoint.x >= barrier.min.x && frontRightPoint.x <= barrier.max.x &&
-                        frontRightPoint.y >= barrier.min.y && frontRightPoint.y <= barrier.max.y ||
-                        backLeftPoint.x >= barrier.min.x && backLeftPoint.x <= barrier.max.x &&
-                        backLeftPoint.y >= barrier.min.y && backLeftPoint.y <= barrier.max.y ||
-                        backRightPoint.x >= barrier.min.x && backRightPoint.x <= barrier.max.x &&
-                        backRightPoint.y >= barrier.min.y && backRightPoint.y <= barrier.max.y
-                        )
-                {
-                    collision = allowCollisionMovement(newCenterPos, realPos, false, &barrier);
-                    break;
-                }
-            }
-        }
-
-        return collision;  // No collision detected
-    }
-
-    bool allowCollisionMovement(glm::vec3 newCenterPos, glm::vec3 realPos, bool isExternalBarrier, const BoundingBox* collidingBarrier) {
-
-        glm::vec2 currentCenter(realPos.x, realPos.z);
-        glm::vec2 newCenter(newCenterPos.x, newCenterPos.z);
-
-
-        glm::vec2 barrierCenter(0.0f, 0.0f);
-        if (!isExternalBarrier && collidingBarrier != nullptr)
-        {
-            glm::vec2 barrierCenter(
-                    (collidingBarrier->min.x + collidingBarrier->max.x) * 0.5f,
-                    (collidingBarrier->min.y + collidingBarrier->max.y) * 0.5f
-            );
-        }
-
-        // Calculate distances
-        float currentDistance = glm::length(currentCenter - barrierCenter);
-        float newDistance = glm::length(newCenter - barrierCenter);
-
-        // If the new position increases the distance from the barrier's center,
-        // allow the movement
-        if ((isExternalBarrier && newDistance < currentDistance) ||
-            (!isExternalBarrier && newDistance > currentDistance))
-        {
-            return false;
-        }
-        return true;
-    }*/
-
-
 
     std::vector<glm::vec2> generateCenters(int coord, int step) {
         std::vector<glm::vec2> centers;
