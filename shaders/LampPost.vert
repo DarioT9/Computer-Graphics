@@ -7,12 +7,14 @@
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec3 inNorm;
 layout(location = 2) in vec2 inUV;
+layout(location = 3) in vec4 inTan;
 
 // this defines the variable passed to the Fragment Shader
 // the locations must match the one of its in variables
 layout(location = 0) out vec3 fragPos;
 layout(location = 1) out vec3 fragNorm;
 layout(location = 2) out vec2 fragUV;
+layout(location = 3) out vec4 fragTan;
 
 // Here the Uniform buffers are defined. In this case, the Transform matrices (Set 1, binding 0)
 // are used. Note that the definition must match the one used in the CPP code

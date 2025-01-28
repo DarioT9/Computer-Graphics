@@ -155,10 +155,6 @@ struct EmissionUniformBufferObject {
     alignas(16) glm::mat4 mvpMat;  // Model-View-Projection matrix for emission objects
 };
 
-struct LightBulbUniformBufferObject {
-    alignas(16) glm::mat4 mvpMat[NLAMPPOST];  // Model-View-Projection matrix for emission objects
-};
-
 // Object parameters structure for controlling light emission (e.g., power and angle)
 struct ObjectParametersUniformBufferObject {
     alignas(4) float Pow;  // Power of the emission
@@ -256,7 +252,6 @@ protected:
     DescriptorSetLayout DSLLampPost;    // Descriptor layout for LampPost
     DescriptorSetLayout DSLskyBox;      // Descriptor layout for the SkyBox
     DescriptorSetLayout DSLEmission;    // Descriptor layout for emission materials
-    DescriptorSetLayout DSLLightBulb;   // Descriptor layout for LightBulb
     DescriptorSetLayout DSLCylinderDelivery;    // Descriptor layout for CylinderDelivery
 
     // Vertex descriptors for defining the layout of vertex data for various objects
@@ -270,7 +265,6 @@ protected:
     VertexDescriptor VDLampPost;        // Vertex descriptor for the LampPost model
     VertexDescriptor VDskyBox;          // Vertex descriptor for the SkyBox
     VertexDescriptor VDEmission;        // Vertex descriptor for the emission model
-    VertexDescriptor VDLightBulb;       // Vertex descriptor for the LightBulb
     VertexDescriptor VDCylinderDelivery;    // Vertex descriptor fot the CylinderDelivery
 
     // Pipelines for rendering the various objects
@@ -284,7 +278,6 @@ protected:
     Pipeline PLampPost;                 // Pipeline for rendering the LampPost
     Pipeline PskyBox;                   // Pipeline for rendering the SkyBox
     Pipeline PEmission;                 // Pipeline for rendering the emission objects
-    Pipeline PLightBulb;                // Pipeline for rendering the LightBulb
     Pipeline PCylinderDelivery;         // Pipeline for rendering the CylinderDelivery
 
     // Models, textures, and descriptor sets for various objects
@@ -301,7 +294,6 @@ protected:
     Model MLampPost;                    // Model for the LampPost
     Model MskyBox;                      // Model for the SkyBox
     Model Mmoon;                        // Model for the Moon (possibly for lighting)
-    Model MLightBulb;                   // Model for the LightBulb
     Model MCylinderDelivery;            // Model for the CylinderDelivery
 
     // Textures for the various objects in the scene
@@ -314,7 +306,6 @@ protected:
     Texture TLampPost;                  // Texture for the LampPost
     Texture TskyBox;                    // Texture for the SkyBox
     Texture Tmoon;                      // Texture for the Moon
-    Texture TLightBulb;                 // Texture for the LightBulb
     Texture TCylinderDelivery;          // Texture for the CylinderDelivery
 
     // Descriptor sets for the various objects
@@ -328,7 +319,6 @@ protected:
     DescriptorSet DSLampPost;           // Descriptor set for the LampPost
     DescriptorSet DSskyBox;             // Descriptor set for the SkyBox
     DescriptorSet DSmoon;               // Descriptor set for the Moon
-    DescriptorSet DSLightBulb;          // Descriptor set for the LightBulb
     DescriptorSet DSCylinderDelivery;   // Descriptor set for the CylinderDelivery
 
     // Other application parameters for scene management and camera controls
@@ -452,12 +442,6 @@ protected:
         // Initialize Descriptor Set Layout for the Emission object with uniform buffers and textures.
         DSLEmission.init(this, {
                 {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         VK_SHADER_STAGE_VERTEX_BIT,   sizeof(EmissionUniformBufferObject), 1},
-                {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0,                                   1}
-        });
-
-        // Initialize Descriptor Set Layout for the LightBulb object with uniform buffers and textures.
-        DSLLightBulb.init(this, {
-                {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         VK_SHADER_STAGE_VERTEX_BIT,   sizeof(LightBulbUniformBufferObject), 1},
                 {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0,                                   1}
         });
 
@@ -603,16 +587,6 @@ protected:
                                         sizeof(glm::vec2), UV}
                         });
 
-        // Initialize the Vertex Descriptor for the LightBulb object with vertex attributes and input rate.
-        VDLightBulb.init(this, {
-                {0, sizeof(EmissionVertex), VK_VERTEX_INPUT_RATE_VERTEX}
-        }, {
-                                {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(EmissionVertex, pos),
-                                        sizeof(glm::vec3), POSITION},
-                                {0, 1, VK_FORMAT_R32G32_SFLOAT,    offsetof(EmissionVertex, UV),
-                                        sizeof(glm::vec2), UV}
-                        });
-
         // Initialize the Vertex Descriptor for the City model with vertex attributes and input rate.
         VDCylinderDelivery.init(this, {
                 {0, sizeof(ObjectVertex),
@@ -651,7 +625,6 @@ protected:
         PskyBox.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
                                     VK_CULL_MODE_BACK_BIT, false);
         PEmission.init(this, &VDEmission, "shaders/EmissionVert.spv", "shaders/EmissionFrag.spv", {&DSLEmission});
-        PLightBulb.init(this, &VDEmission, "shaders/LightBulbVert.spv", "shaders/LightBulbFrag.spv", {&DSLLightBulb});
         PCylinderDelivery.init(this, &VDCylinderDelivery, "shaders/NormalMapVert.spv", "shaders/CylinderFrag.spv", {&DSLGlobal, &DSLCylinderDelivery});
 
         // Load models from the specified paths. Each model is initialized with its respective VertexDescriptor and format.
@@ -682,7 +655,6 @@ protected:
         MLampPost.init(this, &VDLampPost, "models/LampPost/lampPost.obj", OBJ);
         MskyBox.init(this, &VDskyBox, "models/SkyBoxCube.obj", OBJ);
         Mmoon.init(this, &VDEmission, "models/Sphere.obj", OBJ);
-        MLightBulb.init(this, &VDLightBulb, "models/LightBulb/lightbulb.gltf", GLTF);
         MCylinderDelivery.init(this, &VDCylinderDelivery, "models/Cylinder/cylinder.gltf", GLTF);
 
         // Load textures for various objects. Each texture is initialized with the respective file path.
@@ -729,17 +701,15 @@ protected:
 
         Tmoon.init(this, "textures/moon/moonmap.jpg");
 
-        TLightBulb.init(this, "textures/LightBulb/lightbulbbase.png");
-
         TCylinderDelivery.init(this, "textures/cylinder/cylinder.jpg");
 
         // Set up descriptor pool sizes based on the number of uniform blocks, textures, and descriptor sets required for the scene.
         DPSZs.uniformBlocksInPool =
-                1 + 2 + 2 + 2 + 2 + 8 + 8 + 2 + 1 + 1 + 1 + 2; // Total number of uniform blocks (for scooter, city, soil, pizzeria, etc.)
+                1 + 2 + 2 + 2 + 2 + 8 + 8 + 2 + 1 + 1 + 2; // Total number of uniform blocks (for scooter, city, soil, pizzeria, etc.)
         DPSZs.texturesInPool =
-                6 + 1 + 1 + 1 + 4 + 4 + 1 + 1 + 1 + 1 + 1; // Total number of textures (for scooter, city, soil, pizzeria, etc.)
+                6 + 1 + 1 + 1 + 4 + 4 + 1 + 1 + 1 + 1; // Total number of textures (for scooter, city, soil, pizzeria, etc.)
         DPSZs.setsInPool = 1 + 1 + 1 + 1 + 4 + 4 + 1 + 1 + 1 +
-                           1 + 1 + 1; // Total number of descriptor sets (for scooter, city, soil, pizzeria, etc.)
+                           1 + 1; // Total number of descriptor sets (for scooter, city, soil, pizzeria, etc.)
 
         std::cout << "Initialization completed!\n";
         std::cout << "Uniform Blocks in the Pool  : " << DPSZs.uniformBlocksInPool << "\n";
@@ -769,7 +739,6 @@ protected:
         PLampPost.create();
         PskyBox.create();
         PEmission.create();
-        PLightBulb.create();
         PCylinderDelivery.create();
 
         // Create descriptor sets for each object type with their respective textures.
@@ -788,7 +757,6 @@ protected:
         DSLampPost.init(this, &DSLLampPost, {&TLampPost});
         DSskyBox.init(this, &DSLskyBox, {&TskyBox});
         DSmoon.init(this, &DSLEmission, {&Tmoon});
-        DSLightBulb.init(this, &DSLLightBulb, {&TLightBulb});
         DSCylinderDelivery.init(this, &DSLCylinderDelivery, {&TCylinderDelivery});
 
         DSGlobal.init(this, &DSLGlobal, {});
@@ -813,7 +781,6 @@ protected:
         PLampPost.cleanup();
         PskyBox.cleanup();
         PEmission.cleanup();
-        PLightBulb.cleanup();
         PCylinderDelivery.cleanup();
 
         // Clean up the global descriptor set.
@@ -835,7 +802,6 @@ protected:
         DSLampPost.cleanup();
         DSskyBox.cleanup();
         DSmoon.cleanup();
-        DSLightBulb.cleanup();
         DSCylinderDelivery.cleanup();
     }
 
@@ -890,10 +856,6 @@ protected:
         Tmoon.cleanup();
         Mmoon.cleanup();
 
-        // Clean up texture and model resources for the lightbulb.
-        TLightBulb.cleanup();
-        MLightBulb.cleanup();
-
         // Clean up texture and model resources for the cylinderDelivery
         TCylinderDelivery.cleanup();
         MCylinderDelivery.cleanup();
@@ -917,7 +879,6 @@ protected:
         DSLLampPost.cleanup();
         DSLskyBox.cleanup();
         DSLEmission.cleanup();
-        DSLLightBulb.cleanup();
         DSLCylinderDelivery.cleanup();
 
         // Clean up the pipelines by destroying them completely.
@@ -936,7 +897,6 @@ protected:
         PLampPost.destroy();
         PskyBox.destroy();
         PEmission.destroy();
-        PLightBulb.destroy();
         PCylinderDelivery.destroy();
     }
 
@@ -1032,17 +992,10 @@ protected:
         PEmission.bind(commandBuffer);
         Mmoon.bind(commandBuffer);
         DSmoon.bind(commandBuffer, PEmission, 0, currentImage);
+
         // Draw the moon.
         vkCmdDrawIndexed(commandBuffer,
                          static_cast<uint32_t>(Mmoon.indices.size()), 1, 0, 0, 0);
-
-        // Binding the pipeling and model for the lightbulb
-        PLightBulb.bind(commandBuffer);
-        MLightBulb.bind(commandBuffer);
-        DSLightBulb.bind(commandBuffer, PLightBulb, 0, currentImage);
-        // Draw the lightbulb
-        vkCmdDrawIndexed(commandBuffer,
-                         static_cast<uint32_t>(MLightBulb.indices.size()), NLAMPPOST, 0, 0, 0);
 
         // Binding the pipeline and model for the pizzeria.
         PPizzeria.bind(commandBuffer);                // Pipeline for the pizzeria
@@ -1302,10 +1255,6 @@ protected:
         emissionUbo.mvpMat = glm::scale(emissionUbo.mvpMat, glm::vec3(8.0f, 8.0f, 8.0f)); // Scales the emission matrix
         DSmoon.map(currentImage, &emissionUbo, 0);
 
-        LightBulbUniformBufferObject LightBulbUbo{};
-        LightBulbUbo.mvpMat[0] = ViewPrj * baseTr;
-        LightBulbUbo.mvpMat[0] = glm::scale(LightBulbUbo.mvpMat[0], glm::vec3(100.0f, 100.0f, 100.0f));
-
         // Initializes matrices and parameters for different objects
         SingleObjectMatricesUniformBufferObject ScooterUbo{};
         ObjectParametersUniformBufferObject ScooterParUbo{};
@@ -1427,12 +1376,6 @@ protected:
             // Calculates the normal matrix for the first lamp post
             LampPostUbo.nMat[i * 4] = glm::inverse(glm::transpose(LampPostUbo.mMat[i * 4]));
 
-            // Calculates the MVP matrix for the first lightbulb
-            LightBulbUbo.mvpMat[i * 4] = ViewPrj * LampPostUbo.mMat[i * 4];
-            LightBulbUbo.mvpMat[i * 4] = glm::translate(LightBulbUbo.mvpMat[i * 4], glm::vec3(0.0f, 5.0f, 0.5f));
-            LightBulbUbo.mvpMat[i * 4] = glm::rotate(LightBulbUbo.mvpMat[i * 4],  glm::radians(80.0f), glm::vec3(1.0f,0.0f,0.0f));
-            LightBulbUbo.mvpMat[i * 4] = glm::scale(LightBulbUbo.mvpMat[i * 4], glm::vec3(2.0f, 2.0f, 2.0f));
-
             // Updates the model matrix for the second lamp post in the set
             LampPostUbo.mMat[i * 4 + 1] =
                     glm::translate(glm::mat4(1.0f), glm::vec3(84 - (24 * (i % 8)), 0.0, 75 - (24 * (i / 8)))) *
@@ -1441,12 +1384,6 @@ protected:
             LampPostUbo.mvpMat[i * 4 + 1] = ViewPrj * LampPostUbo.mMat[i * 4 + 1];
             // Calculates the normal matrix for the second lamp post
             LampPostUbo.nMat[i * 4 + 1] = glm::inverse(glm::transpose(LampPostUbo.mMat[i * 4 + 1]));
-
-            // Calculates the MVP matrix for the second lightbulb
-            LightBulbUbo.mvpMat[i * 4 + 1] = ViewPrj * LampPostUbo.mMat[i * 4 + 1];
-            LightBulbUbo.mvpMat[i * 4 + 1] = glm::translate(LightBulbUbo.mvpMat[i * 4 + 1], glm::vec3(0.0f, 5.0f, 0.5f));
-            LightBulbUbo.mvpMat[i * 4 + 1] = glm::rotate(LightBulbUbo.mvpMat[i * 4 + 1],  glm::radians(80.0f), glm::vec3(1.0f,0.0f,0.0f));
-            LightBulbUbo.mvpMat[i * 4 + 1] = glm::scale(LightBulbUbo.mvpMat[i * 4 + 1], glm::vec3(2.0f, 2.0f, 2.0f));
 
             // Updates the model matrix for the third lamp post in the set
             LampPostUbo.mMat[i * 4 + 2] =
@@ -1457,12 +1394,6 @@ protected:
             // Calculates the normal matrix for the third lamp post
             LampPostUbo.nMat[i * 4 + 2] = glm::inverse(glm::transpose(LampPostUbo.mMat[i * 4 + 2]));
 
-            // Calculates the MVP matrix for the third lightbulb
-            LightBulbUbo.mvpMat[i * 4 + 2] = ViewPrj * LampPostUbo.mMat[i * 4 + 2];
-            LightBulbUbo.mvpMat[i * 4 + 2] = glm::translate(LightBulbUbo.mvpMat[i * 4 + 2], glm::vec3(0.0f, 5.0f, 0.5f));
-            LightBulbUbo.mvpMat[i * 4 + 2] = glm::rotate(LightBulbUbo.mvpMat[i * 4 + 2],  glm::radians(80.0f), glm::vec3(1.0f,0.0f,0.0f));
-            LightBulbUbo.mvpMat[i * 4 + 2] = glm::scale(LightBulbUbo.mvpMat[i * 4 + 2], glm::vec3(2.0f, 2.0f, 2.0f));
-
             // Updates the model matrix for the fourth lamp post in the set
             LampPostUbo.mMat[i * 4 + 3] = glm::translate(glm::mat4(1.0f), glm::vec3(84 - (24 * (i % 8)), 0.0, 93 - (24 * (i / 8))));
             // Calculates the MVP matrix for the fourth lamp post
@@ -1470,11 +1401,6 @@ protected:
             // Calculates the normal matrix for the fourth lamp post
             LampPostUbo.nMat[i * 4 + 3] = glm::inverse(glm::transpose(LampPostUbo.mMat[i * 4 + 3]));
 
-            // Calculates the MVP matrix for the fourth lightbulb
-            LightBulbUbo.mvpMat[i * 4 + 3] = ViewPrj * LampPostUbo.mMat[i * 4 + 3];
-            LightBulbUbo.mvpMat[i * 4 + 3] = glm::translate(LightBulbUbo.mvpMat[i * 4 + 3], glm::vec3(0.0f, 5.0f, 0.5f));
-            LightBulbUbo.mvpMat[i * 4 + 3] = glm::rotate(LightBulbUbo.mvpMat[i * 4 + 3],  glm::radians(80.0f), glm::vec3(1.0f,0.0f,0.0f));
-            LightBulbUbo.mvpMat[i * 4 + 3] = glm::scale(LightBulbUbo.mvpMat[i * 4 + 3], glm::vec3(2.0f, 2.0f, 2.0f));
         }
 
 
@@ -1539,9 +1465,6 @@ protected:
 
         // Maps the UBO for the lamp posts
         DSLampPost.map(currentImage, &LampPostUbo, 0);
-
-        // Maps the UBO for the light bulb
-        DSLightBulb.map(currentImage, &LightBulbUbo, 0);
 
         // Maps the UBO for the SkyBox
         DSskyBox.map(currentImage, &SkyBoxUbo, 0);
