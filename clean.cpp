@@ -17,6 +17,7 @@
 #define NTYPETREE 4
 #define NLAMPPOST 256
 
+
 // TextMaker instance for creating text
 TextMaker txt;
 
@@ -238,6 +239,8 @@ std::vector<ModelOffsets> calculateOffsets(const std::string& filename) {
 class Application : public BaseProject {
 protected:
 
+    std::vector<ModelOffsets> ScooterOffsets;
+
     // Descriptor Layouts ["classes" of what will be passed to the shaders]
     DescriptorSetLayout DSLGlobal;	// For global values (lighting, camera, etc.)
 
@@ -349,8 +352,8 @@ protected:
     // Set the main application parameters for the window and display
     void setWindowParameters() {
         // Set the window size, title, and initial background color
-        windowWidth = 800;
-        windowHeight = 600;
+        windowWidth = 1280;
+        windowHeight = 720;
         windowTitle = "Computer Graphics Project - Pizza Delivery"; // Window title
         windowResizable = GLFW_TRUE;           // Allow window resizing
         initialBackgroundColor = {0.1f, 0.1f, 0.1f, 1.0f}; // Initial background color (dark gray)
@@ -368,6 +371,9 @@ protected:
     // Here the Vulkan Models and Textures are loaded and set up.
 // Descriptor set layouts are created and shaders are loaded for the pipelines.
     void localInit() {
+
+
+        ScooterOffsets = calculateOffsets("models/Scooter.obj");
 
         // Initialize the Descriptor Layout for Global values.
         DSLGlobal.init(this, {
@@ -905,7 +911,7 @@ protected:
     void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
 
         // Binding the pipeline, model, descriptor sets, and issuing the draw call for the scooter.
-        std::vector<ModelOffsets> ScooterOffsets = calculateOffsets("models/Scooter.obj");
+        std::vector<ModelOffsets> ScooterOffsets = this->ScooterOffsets;
         PScooter.bind(commandBuffer);
         MScooter.bind(commandBuffer);
 
@@ -1207,7 +1213,7 @@ protected:
             Mv = ViewMatrix;
         } else if(currScene == 1){ //Orthogonal camera
 
-            M = glm::rotate(glm::mat4(1.0f / 15.0f,0,0,0,  0,-4.0f / 45.f,0,0,   0,0,1.0f/(-500.0f-500.0f),0, 0,0,-500.0f/(-500.0f-500.0f),1), glm::radians(90.0f), glm::vec3(1,0,0));
+            M = glm::rotate(glm::mat4(1.0f / 15.0f,0,0,0,  0,(-1.0f / 15.0f)*Ar,0,0,   0,0,1.0f/(-500.0f-500.0f),0, 0,0,-500.0f/(-500.0f-500.0f),1), glm::radians(90.0f), glm::vec3(1,0,0));
             Mv =  glm::inverse(
                     glm::translate(glm::mat4(1), ScooterPos) *
                     glm::rotate(glm::mat4(1), DlookAng, glm::vec3(0,1,0))
