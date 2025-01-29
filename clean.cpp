@@ -1236,7 +1236,7 @@ protected:
         float LampPostLightIntensity = 2.5f;
         glm::vec3 LampPostLightColor = glm::vec3(1.0f, 0.85f, 0.4f);
         for(int i = 0; i < NLAMPPOST/4; i++) {
-            gubo.PointLights[i * 4].lightPosition = glm::vec3(75 - (24 * (i % 8)), 0.0, 85 - (24 * (i / 8))) + glm::vec3(0.0f, 5.0f, 1.0f);
+            gubo.PointLights[i * 4].lightPosition = glm::vec3(75 - (24 * (i % 8)), 0.0, 85 - (24 * (i / 8))) + glm::vec3(0.0f, 5.0f, 0.0f);
             gubo.PointLights[i * 4].lightColor = LampPostLightColor;
             gubo.PointLights[i * 4].lightIntensity = LampPostLightIntensity;
 
@@ -1244,7 +1244,7 @@ protected:
             gubo.PointLights[i * 4 + 1].lightColor = LampPostLightColor;
             gubo.PointLights[i * 4 + 1].lightIntensity = LampPostLightIntensity;
 
-            gubo.PointLights[i * 4 + 2].lightPosition = glm::vec3(93 - (24 * (i % 8)), 0.0, 85 - (24 * (i / 8))) + glm::vec3(0.0f, 5.0f, 1.0f);
+            gubo.PointLights[i * 4 + 2].lightPosition = glm::vec3(93 - (24 * (i % 8)), 0.0, 85 - (24 * (i / 8))) + glm::vec3(0.0f, 5.0f, 0.0f);
             gubo.PointLights[i * 4 + 2].lightColor = LampPostLightColor;
             gubo.PointLights[i * 4 + 2].lightIntensity = LampPostLightIntensity;
 
