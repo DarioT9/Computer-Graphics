@@ -18,6 +18,11 @@
 #define NLAMPPOST 256
 
 
+struct ModelMatrices {
+    glm::mat4 mMat;
+    glm::mat4 nMat;
+};
+
 // TextMaker instance for creating text
 TextMaker txt;
 
@@ -108,36 +113,6 @@ struct TreeMatricesUniformBufferObject {
     alignas(16) glm::mat4 mMat[NTREE];    // Model matrix for each tree
     alignas(16) glm::mat4 nMat[NTREE];    // Normal matrix for each tree
 };
-
-
-// Function to update tree matrices, including translation, scaling, and matrix calculations
-void updateTreeMatrices(TreeMatricesUniformBufferObject* treeUbo, int& counter, int i, int offset, const glm::mat4& ViewPrj, bool applyScale) {
-    for (int k = 0; k < 4; ++k) {
-        glm::vec3 translation;
-        // Define translation based on the case value (k)
-        switch (k) {
-            case 0: translation = glm::vec3(75 - (24 * (i % 8)), 0.0, 85 - offset - (24 * (i / 8))); break;
-            case 1: translation = glm::vec3(84 + offset - (24 * (i % 8)), 0.0, 75 - (24 * (i / 8))); break;
-            case 2: translation = glm::vec3(93 - (24 * (i % 8)), 0.0, 85 + offset - (24 * (i / 8))); break;
-            case 3: translation = glm::vec3(84 - offset - (24 * (i % 8)), 0.0, 93 - (24 * (i / 8))); break;
-        }
-
-        int idx = counter * 4 + k;
-        treeUbo->mMat[idx] = glm::translate(glm::mat4(1.0f), translation);
-
-        // Apply scaling if requested
-        if (applyScale) {
-            treeUbo->mMat[idx] = glm::scale(treeUbo->mMat[idx], glm::vec3(0.5f, 0.5f, 0.5f));
-        }
-
-        // Calculate the Model-View-Projection matrix
-        treeUbo->mvpMat[idx] = ViewPrj * treeUbo->mMat[idx];
-        // Calculate the Normal matrix (transpose of the inverse of the Model matrix)
-        treeUbo->nMat[idx] = glm::inverse(glm::transpose(treeUbo->mMat[idx]));
-    }
-
-    ++counter;
-}
 
 // Struct for lamp post matrices, including MVP, Model, and Normal matrices
 struct LampPostMatricesUniformBufferObject {
@@ -240,6 +215,15 @@ class Application : public BaseProject {
 protected:
 
     std::vector<ModelOffsets> ScooterOffsets;
+
+    ModelMatrices CityMatrices;
+    ModelMatrices SoilMatrices;
+    ModelMatrices PizzeriaMatrices;
+    ModelMatrices CylinderDeliveryMatrices;
+    ModelMatrices SkyScraperMatrices[NTYPESKYSCRAPER][NSKYSCRAPER];
+    ModelMatrices TreeMatrices[NTYPETREE][NTREE];
+    ModelMatrices LampPostMatrices[NLAMPPOST];
+    glm::vec3 PointLightPositions[NLAMPPOST];
 
     // Descriptor Layouts ["classes" of what will be passed to the shaders]
     DescriptorSetLayout DSLGlobal;	// For global values (lighting, camera, etc.)
@@ -349,11 +333,48 @@ protected:
     std::vector<BoundingBox> barriers = getBarriers(centers, 20);
     BoundingBox externalBarriers = {{-98.0f, -98.0f}, {98.0f, 98.0f}}; // External barriers
 
+    void calculateTreeMatrices(int typeIndex, int& counter, int i, int offset, bool applyScale) {
+        for (int k = 0; k < 4; ++k) {
+            glm::vec3 translation;
+            // Define translation based on the case value (k)
+            switch (k) {
+                case 0: translation = glm::vec3(75 - (24 * (i % 8)), 0.0, 85 - offset - (24 * (i / 8))); break;
+                case 1: translation = glm::vec3(84 + offset - (24 * (i % 8)), 0.0, 75 - (24 * (i / 8))); break;
+                case 2: translation = glm::vec3(93 - (24 * (i % 8)), 0.0, 85 + offset - (24 * (i / 8))); break;
+                case 3: translation = glm::vec3(84 - offset - (24 * (i % 8)), 0.0, 93 - (24 * (i / 8))); break;
+            }
+
+            int idx = counter * 4 + k;
+            TreeMatrices[typeIndex][idx].mMat = glm::translate(glm::mat4(1.0f), translation);
+
+            // Apply scaling if requested
+            if (applyScale) {
+                TreeMatrices[typeIndex][idx].mMat = glm::scale(TreeMatrices[typeIndex][idx].mMat, glm::vec3(0.5f, 0.5f, 0.5f));
+            }
+
+            // Calculate the Normal matrix (transpose of the inverse of the Model matrix)
+            TreeMatrices[typeIndex][idx].nMat = glm::inverse(glm::transpose(TreeMatrices[typeIndex][idx].mMat));
+        }
+        ++counter;
+    }
+
+    // Function to update tree matrices, including translation, scaling, and matrix calculations
+    void updateTreeMatrices(int typeIndex, TreeMatricesUniformBufferObject* treeUbo, int& counter, const glm::mat4& ViewPrj) {
+        for (int k = 0; k < 4; ++k) {
+            int idx = counter * 4 + k;
+            // Calculate the Model-View-Projection matrix
+            treeUbo->mMat[idx] = TreeMatrices[typeIndex][idx].mMat;
+            treeUbo->nMat[idx] = TreeMatrices[typeIndex][idx].nMat;
+            treeUbo->mvpMat[idx] = ViewPrj * treeUbo->mMat[idx];
+        }
+        ++counter;
+    }
+
     // Set the main application parameters for the window and display
     void setWindowParameters() {
         // Set the window size, title, and initial background color
-        windowWidth = 1280;
-        windowHeight = 720;
+        windowWidth = 800;
+        windowHeight = 450;
         windowTitle = "Computer Graphics Project - Pizza Delivery"; // Window title
         windowResizable = GLFW_TRUE;           // Allow window resizing
         initialBackgroundColor = {0.1f, 0.1f, 0.1f, 1.0f}; // Initial background color (dark gray)
@@ -372,8 +393,142 @@ protected:
 // Descriptor set layouts are created and shaders are loaded for the pipelines.
     void localInit() {
 
-
         ScooterOffsets = calculateOffsets("models/Scooter.obj");
+
+        CityMatrices.mMat = glm::mat4(1.0f);
+        CityMatrices.nMat = glm::inverse(glm::transpose(CityMatrices.mMat));
+
+        SoilMatrices.mMat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.1f, 0.0f));
+        SoilMatrices.nMat = glm::inverse(glm::transpose(SoilMatrices.mMat));
+
+        PizzeriaMatrices.mMat = glm::translate(glm::mat4(1.0f),
+                                                  glm::vec3(84.0f - (24.0f * (28 % 8)), 0.0f, 84.0f - (24.0f * (28 / 8))));
+        PizzeriaMatrices.mMat = glm::rotate(PizzeriaMatrices.mMat, glm::radians(-45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        PizzeriaMatrices.mMat = glm::scale(PizzeriaMatrices.mMat, glm::vec3(1.5f, 1.5f, 1.5f));
+        PizzeriaMatrices.nMat = glm::inverse(glm::transpose(PizzeriaMatrices.mMat));
+
+        CylinderDeliveryMatrices.mMat = glm::mat4(1.0f);
+        CylinderDeliveryMatrices.nMat = glm::inverse(glm::transpose(CylinderDeliveryMatrices.mMat));
+
+        int currentIndex = -1;
+        int counterSkyScraper[NTYPESKYSCRAPER] = {0, 0, 0, 0}; // Array of counters for skyscrapers
+
+        // Loops over each skyscraper and updates their matrices
+        for (int i = 0; i < NSKYSCRAPER * 4; i++) {
+            for (int j = 0; j < NSKYSCRAPER; j++) {
+                if (indicesSkyScraper1[j] == i) {
+                    currentIndex = 0;
+                } else if (indicesSkyScraper2[j] == i) {
+                    currentIndex = 1;
+                } else if (indicesSkyScraper3[j] == i) {
+                    currentIndex = 2;
+                } else if (indicesSkyScraper4[j] == i) {
+                    currentIndex = 3;
+                }
+            }
+
+            // Excludes the pizzeria tile (28th one)
+            if (i == 28) {
+                currentIndex = -1;
+            }
+
+            if (currentIndex != -1) {
+                // Updates the model matrix for the current skyscraper
+                SkyScraperMatrices[currentIndex][counterSkyScraper[currentIndex]].mMat = glm::translate(glm::mat4(1.0f),
+                                                                                                    glm::vec3(84.0 - (24.0 * (i % 8)), 0.0, 84 - (24 * (i / 8))));
+
+                SkyScraperMatrices[currentIndex][counterSkyScraper[currentIndex]].mMat = glm::rotate(
+                        SkyScraperMatrices[currentIndex][counterSkyScraper[currentIndex]].mMat,
+                        glm::radians(90.0f * (float)(i % 4)), // Rotation angle in degrees
+                        glm::vec3(0.0f, 1.0f, 0.0f));         // Y-axis rotation
+
+                SkyScraperMatrices[currentIndex][counterSkyScraper[currentIndex]].mMat = glm::scale(
+                        SkyScraperMatrices[currentIndex][counterSkyScraper[currentIndex]].mMat,
+                        glm::vec3(0.85f));
+
+                // Calculates the normal matrix for the current skyscraper
+                SkyScraperMatrices[currentIndex][counterSkyScraper[currentIndex]].nMat =
+                        glm::inverse(glm::transpose(SkyScraperMatrices[currentIndex][counterSkyScraper[currentIndex]].mMat));
+
+                // Increments the counter for the skyscraper
+                counterSkyScraper[currentIndex]++;
+            }
+        }
+
+        for (int i = 0; i < NLAMPPOST / 4; i++){
+            LampPostMatrices[i * 4].mMat =
+                    glm::translate(glm::mat4(1.0f), glm::vec3(75 - (24 * (i % 8)), 0.0, 85 - (24 * (i / 8)))) *
+                    glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+            LampPostMatrices[i * 4].nMat = glm::inverse(glm::transpose(LampPostMatrices[i * 4].mMat));
+
+            LampPostMatrices[i * 4 + 1].mMat =
+                    glm::translate(glm::mat4(1.0f), glm::vec3(84 - (24 * (i % 8)), 0.0, 75 - (24 * (i / 8)))) *
+                    glm::rotate(glm::mat4(1.0f), glm::radians(-180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+            LampPostMatrices[i * 4 + 1].nMat = glm::inverse(glm::transpose(LampPostMatrices[i * 4 + 1].mMat));
+
+            LampPostMatrices[i * 4 + 2].mMat =
+                    glm::translate(glm::mat4(1.0f), glm::vec3(93 - (24 * (i % 8)), 0.0, 85 - (24 * (i / 8)))) *
+                    glm::rotate(glm::mat4(1.0f), glm::radians(-270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+            LampPostMatrices[i * 4 + 2].nMat = glm::inverse(glm::transpose(LampPostMatrices[i * 4 + 2].mMat));
+
+            LampPostMatrices[i * 4 + 3].mMat =
+                    glm::translate(glm::mat4(1.0f), glm::vec3(84 - (24 * (i % 8)), 0.0, 93 - (24 * (i / 8))));
+            LampPostMatrices[i * 4 + 3].nMat = glm::inverse(glm::transpose(LampPostMatrices[i * 4 + 3].mMat));
+        }
+
+        for (int i = 0; i < NLAMPPOST / 4; i++){
+            PointLightPositions[i * 4] = glm::vec3(75 - (24 * (i % 8)), 5.0f, 85 - (24 * (i / 8)));
+            PointLightPositions[i * 4 + 1] = glm::vec3(84 - (24 * (i % 8)), 5.0f, 75 - (24 * (i / 8)));
+            PointLightPositions[i * 4 + 2] = glm::vec3(93 - (24 * (i % 8)), 5.0f, 85 - (24 * (i / 8)));
+            PointLightPositions[i * 4 + 3] = glm::vec3(84 - (24 * (i % 8)), 5.0f, 93 - (24 * (i / 8)));
+        }
+
+        // Initializes and sets up tree indices and counters for positioning and transformation
+        currentIndex = -1;
+        int offset = 6;
+        int counterTree[4] = {0, 0, 0, 0}; // Counter for each tree
+        int* indicesTree[4] = {indicesTree1, indicesTree2, indicesTree3, indicesTree4}; // Array of indices for trees
+
+        // Iterates over all tree indices and updates the matrices for each tree
+        for (int i = 0; i < NTREE; ++i) {
+            currentIndex = -1;
+
+            // Determines the current tree index
+            for (int j = 0; j < NTYPETREE; ++j) {
+                for (int k = 0; k < NTREE / NTYPETREE; ++k) {
+                    if (indicesTree[j][k] == i) {
+                        currentIndex = j;
+                        break;
+                    }
+                }
+                if (currentIndex != -1) break;
+            }
+
+            // Excludes the pizzeria tile from tree updates (28th one)
+            if (i == 28) {
+                currentIndex = -1;
+            }
+
+            // Updates the matrices for the current tree, applying scale only for Tree1 and Tree4
+            if (currentIndex != -1) {
+                bool applyScale = (currentIndex == 0 || currentIndex == 3); // Apply scale only for Tree1 and Tree4
+                calculateTreeMatrices(currentIndex, counterTree[currentIndex], i, offset, applyScale);
+            }
+        }
+
+//        for (int i = 0; i < NTREE; i++){
+//            if(i % 16 == 0){
+//                currentIndex++;
+//            }
+//            TreeMatrices[i].mMat = glm::translate(glm::mat4(1.0f),
+//                                                  glm::vec3(75.0f - (24.0f * (i % 8)), 0.0f, 85.0f - (24.0f * (i / 8)));
+//            TreeMatrices[i].mMat = glm::scale(TreeMatrices[i].mMat, glm::vec3(0.5f, 0.5f, 0.5f));
+//            TreeMatrices[i].nMat = glm::inverse(glm::transpose(TreeMatrices[i].mMat));
+//        }
+
+
+
+
 
         // Initialize the Descriptor Layout for Global values.
         DSLGlobal.init(this, {
@@ -1152,6 +1307,10 @@ protected:
                 DeliveryPos = deliveryStartPosition;
                 ReturnToPizzeria = true;
             }
+            CylinderDeliveryMatrices.mMat = glm::translate(glm::mat4(1.0f), glm::vec3(DeliveryPos.x + 1.5f, DeliveryPos.y, DeliveryPos.z + 1.5f));
+            CylinderDeliveryMatrices.mMat = glm::rotate(CylinderDeliveryMatrices.mMat, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+            CylinderDeliveryMatrices.mMat = glm::scale(CylinderDeliveryMatrices.mMat, glm::vec3(1.0f, 1.0f, 100.0f));     // Scale on the z axis to make it high enough
+            CylinderDeliveryMatrices.nMat = glm::inverse(glm::transpose(CylinderDeliveryMatrices.mMat));
         }
 
         glm::mat4 Mv;
@@ -1211,7 +1370,8 @@ protected:
                            dampedCamPos * exp(-lambdaCam * deltaT);
             M = MakeViewProjectionLookAt(dampedCamPos, CamTarget, glm::vec3(0,1,0), CamRoll, glm::radians(90.0f), Ar, 0.1f, 500.0f);
             Mv = ViewMatrix;
-        } else if(currScene == 1){ //Orthogonal camera
+        }
+        else if(currScene == 1){ //Orthogonal camera
 
             M = glm::rotate(glm::mat4(1.0f / 15.0f,0,0,0,  0,(-1.0f / 15.0f)*Ar,0,0,   0,0,1.0f/(-500.0f-500.0f),0, 0,0,-500.0f/(-500.0f-500.0f),1), glm::radians(90.0f), glm::vec3(1,0,0));
             Mv =  glm::inverse(
@@ -1236,19 +1396,23 @@ protected:
         float LampPostLightIntensity = 2.5f;
         glm::vec3 LampPostLightColor = glm::vec3(1.0f, 0.85f, 0.4f);
         for(int i = 0; i < NLAMPPOST/4; i++) {
-            gubo.PointLights[i * 4].lightPosition = glm::vec3(75 - (24 * (i % 8)), 0.0, 85 - (24 * (i / 8))) + glm::vec3(0.0f, 5.0f, 0.0f);
+            gubo.PointLights[i * 4].lightPosition = glm::vec3(75 - (24 * (i % 8)), 5.0, 85 - (24 * (i / 8)));
+//            gubo.PointLights[i * 4].lightPosition = PointLightPositions[i * 4];
             gubo.PointLights[i * 4].lightColor = LampPostLightColor;
             gubo.PointLights[i * 4].lightIntensity = LampPostLightIntensity;
 
-            gubo.PointLights[i * 4 + 1].lightPosition = glm::vec3(84 - (24 * (i % 8)), 0.0, 75 - (24 * (i / 8))) + glm::vec3(0.0f, 5.0f, 0.0f);
+            gubo.PointLights[i * 4 + 1].lightPosition = glm::vec3(84 - (24 * (i % 8)), 5.0, 75 - (24 * (i / 8)));
+//            gubo.PointLights[i * 4 + 1].lightPosition = PointLightPositions[i * 4 + 1];
             gubo.PointLights[i * 4 + 1].lightColor = LampPostLightColor;
             gubo.PointLights[i * 4 + 1].lightIntensity = LampPostLightIntensity;
 
-            gubo.PointLights[i * 4 + 2].lightPosition = glm::vec3(93 - (24 * (i % 8)), 0.0, 85 - (24 * (i / 8))) + glm::vec3(0.0f, 5.0f, 0.0f);
+//            gubo.PointLights[i * 4 + 2].lightPosition = glm::vec3(93 - (24 * (i % 8)), 5.0, 85 - (24 * (i / 8)));
+            gubo.PointLights[i * 4 + 2].lightPosition = PointLightPositions[i * 4 + 2];
             gubo.PointLights[i * 4 + 2].lightColor = LampPostLightColor;
             gubo.PointLights[i * 4 + 2].lightIntensity = LampPostLightIntensity;
 
-            gubo.PointLights[i * 4 + 3].lightPosition = glm::vec3(84 - (24 * (i % 8)), 0.0, 93 - (24 * (i / 8))) + glm::vec3(0.0f, 5.0f, 0.0f);
+//            gubo.PointLights[i * 4 + 3].lightPosition = glm::vec3(84 - (24 * (i % 8)), 5.0, 93 - (24 * (i / 8)));
+            gubo.PointLights[i * 4 + 3].lightPosition = PointLightPositions[i * 4 + 3];
             gubo.PointLights[i * 4 + 3].lightColor = LampPostLightColor;
             gubo.PointLights[i * 4 + 3].lightIntensity = LampPostLightIntensity;
         }
@@ -1293,33 +1457,24 @@ protected:
         ScooterUbo.mvpMat = ViewPrj * ScooterUbo.mMat; // Calculates MVP matrix for the scooter
         ScooterUbo.nMat = glm::inverse(glm::transpose(ScooterUbo.mMat)); // Calculates normal matrix for the scooter
 
-        CityUbo.mMat = glm::mat4(1.0f); // Sets identity matrix for the city
-        CityUbo.nMat = glm::mat4(1.0f); // Sets identity normal matrix for the city
+        CityUbo.mMat = CityMatrices.mMat; // Sets identity matrix for the city
+        CityUbo.nMat = CityMatrices.nMat; // Sets identity normal matrix for the city
         CityUbo.mvpMat = ViewPrj; // Sets MVP matrix for the city
 
-        SoilUbo.mMat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.01f, 0.0f)); // Applies a slight downward translation
-        SoilUbo.nMat = glm::mat4(1.0f); // Sets identity normal matrix for the soil
+        SoilUbo.mMat = SoilMatrices.mMat; // Applies a slight downward translation
+        SoilUbo.nMat = SoilMatrices.nMat; // Sets identity normal matrix for the soil
         SoilUbo.mvpMat = ViewPrj * SoilUbo.mMat; // Updates MVP matrix with the transformation
 
         // Updates the model matrix for the pizzeria with a scaling factor of 1.8 and a rotation of 45 degrees
-        PizzeriaUbo.mMat = glm::translate(glm::mat4(1.0f),
-                                          glm::vec3(84.0 - (24.0 * (28 % 8)), 0.0, 84 - (24 * (28 / 8))));
-        PizzeriaUbo.mMat = glm::rotate(PizzeriaUbo.mMat, glm::radians(-45.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // Rotates the pizzeria
-        PizzeriaUbo.mMat = glm::scale(PizzeriaUbo.mMat, glm::vec3(1.5f, 1.5f, 1.5f)); // Scales the pizzeria
-
-        // Calculates the MVP matrix for the pizzeria
-        PizzeriaUbo.mvpMat = ViewPrj * PizzeriaUbo.mMat;
-
-        // Calculates the normal matrix for the pizzeria
-        PizzeriaUbo.nMat = glm::inverse(glm::transpose(PizzeriaUbo.mMat));
+        PizzeriaUbo.mMat = PizzeriaMatrices.mMat;
+        PizzeriaUbo.nMat = PizzeriaMatrices.nMat;
+        PizzeriaUbo.mvpMat = ViewPrj * PizzeriaUbo.mMat; // Calculates the MVP matrix for the pizzeria
 
 
         // Updates the model matrix for the cylinderDelivery
-        CylinderDeliveryUbo.mMat = glm::translate(glm::mat4(1.0f), glm::vec3(DeliveryPos.x + 1.5f, DeliveryPos.y, DeliveryPos.z + 1.5f));
-        CylinderDeliveryUbo.mMat = glm::rotate(CylinderDeliveryUbo.mMat, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-        CylinderDeliveryUbo.mMat = glm::scale(CylinderDeliveryUbo.mMat, glm::vec3(1.0f, 1.0f, 100.0f));     // Scale on the z axis to make it high enough
+        CylinderDeliveryUbo.mMat = CylinderDeliveryMatrices.mMat;
+        CylinderDeliveryUbo.nMat = CylinderDeliveryMatrices.nMat;
         CylinderDeliveryUbo.mvpMat = ViewPrj * CylinderDeliveryUbo.mMat;
-        CylinderDeliveryUbo.nMat = glm::inverse(glm::transpose(CylinderDeliveryUbo.mMat));
 
         int currentIndex = -1;
         int counterSkyScraper[NTYPESKYSCRAPER] = {0, 0, 0, 0}; // Array of counters for skyscrapers
@@ -1345,25 +1500,14 @@ protected:
 
             if (currentIndex != -1) {
                 // Updates the model matrix for the current skyscraper
-                skyScraperUbos[currentIndex].mMat[counterSkyScraper[currentIndex]] = glm::translate(glm::mat4(1.0f),
-                                                                                                    glm::vec3(84.0 - (24.0 * (i % 8)), 0.0, 84 - (24 * (i / 8))));
-
-                skyScraperUbos[currentIndex].mMat[counterSkyScraper[currentIndex]] = glm::rotate(
-                        skyScraperUbos[currentIndex].mMat[counterSkyScraper[currentIndex]],
-                        glm::radians(90.0f * (float)(i % 4)), // Rotation angle in degrees
-                        glm::vec3(0.0f, 1.0f, 0.0f));         // Y-axis rotation
-
-                skyScraperUbos[currentIndex].mMat[counterSkyScraper[currentIndex]] = glm::scale(
-                        skyScraperUbos[currentIndex].mMat[counterSkyScraper[currentIndex]],
-                        glm::vec3(0.85f));
+                skyScraperUbos[currentIndex].mMat[counterSkyScraper[currentIndex]] = SkyScraperMatrices[currentIndex][counterSkyScraper[currentIndex]].mMat;
 
                 // Calculates the MVP matrix for the current skyscraper
                 skyScraperUbos[currentIndex].mvpMat[counterSkyScraper[currentIndex]] =
                         ViewPrj * skyScraperUbos[currentIndex].mMat[counterSkyScraper[currentIndex]];
 
                 // Calculates the normal matrix for the current skyscraper
-                skyScraperUbos[currentIndex].nMat[counterSkyScraper[currentIndex]] =
-                        glm::inverse(glm::transpose(skyScraperUbos[currentIndex].mMat[counterSkyScraper[currentIndex]]));
+                skyScraperUbos[currentIndex].nMat[counterSkyScraper[currentIndex]] = SkyScraperMatrices[currentIndex][counterSkyScraper[currentIndex]].nMat;
 
                 // Increments the counter for the skyscraper
                 counterSkyScraper[currentIndex]++;
@@ -1374,39 +1518,32 @@ protected:
         // Iterates through the lamp posts and updates the model matrices, MVP matrices, and normal matrices for each lamp post.
         for(int i = 0; i < NLAMPPOST/4; i++) {
             // Updates the model matrix for the first lamp post in the set
-            LampPostUbo.mMat[i * 4] =
-                    glm::translate(glm::mat4(1.0f), glm::vec3(75 - (24 * (i % 8)), 0.0, 85 - (24 * (i / 8)))) *
-                    glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+            LampPostUbo.mMat[i * 4] = LampPostMatrices[i * 4].mMat;
             // Calculates the MVP matrix for the first lamp post
             LampPostUbo.mvpMat[i * 4] = ViewPrj * LampPostUbo.mMat[i * 4];
             // Calculates the normal matrix for the first lamp post
-            LampPostUbo.nMat[i * 4] = glm::inverse(glm::transpose(LampPostUbo.mMat[i * 4]));
+            LampPostUbo.nMat[i * 4] = LampPostMatrices[i * 4].nMat;
 
             // Updates the model matrix for the second lamp post in the set
-            LampPostUbo.mMat[i * 4 + 1] =
-                    glm::translate(glm::mat4(1.0f), glm::vec3(84 - (24 * (i % 8)), 0.0, 75 - (24 * (i / 8)))) *
-                    glm::rotate(glm::mat4(1.0f), glm::radians(-180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+            LampPostUbo.mMat[i * 4 + 1] = LampPostMatrices[i * 4 + 1].mMat;
             // Calculates the MVP matrix for the second lamp post
             LampPostUbo.mvpMat[i * 4 + 1] = ViewPrj * LampPostUbo.mMat[i * 4 + 1];
             // Calculates the normal matrix for the second lamp post
-            LampPostUbo.nMat[i * 4 + 1] = glm::inverse(glm::transpose(LampPostUbo.mMat[i * 4 + 1]));
+            LampPostUbo.nMat[i * 4 + 1] = LampPostMatrices[i * 4 + 1].nMat;
 
             // Updates the model matrix for the third lamp post in the set
-            LampPostUbo.mMat[i * 4 + 2] =
-                    glm::translate(glm::mat4(1.0f), glm::vec3(93 - (24 * (i % 8)), 0.0, 85 - (24 * (i / 8)))) *
-                    glm::rotate(glm::mat4(1.0f), glm::radians(-270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+            LampPostUbo.mMat[i * 4 + 2] = LampPostMatrices[i * 4 + 2].mMat;
             // Calculates the MVP matrix for the third lamp post
             LampPostUbo.mvpMat[i * 4 + 2] = ViewPrj * LampPostUbo.mMat[i * 4 + 2];
             // Calculates the normal matrix for the third lamp post
-            LampPostUbo.nMat[i * 4 + 2] = glm::inverse(glm::transpose(LampPostUbo.mMat[i * 4 + 2]));
+            LampPostUbo.nMat[i * 4 + 2] = LampPostMatrices[i * 4 + 2].nMat;
 
             // Updates the model matrix for the fourth lamp post in the set
-            LampPostUbo.mMat[i * 4 + 3] = glm::translate(glm::mat4(1.0f), glm::vec3(84 - (24 * (i % 8)), 0.0, 93 - (24 * (i / 8))));
+            LampPostUbo.mMat[i * 4 + 3] = LampPostMatrices[i * 4 + 3].mMat;
             // Calculates the MVP matrix for the fourth lamp post
             LampPostUbo.mvpMat[i * 4 + 3] = ViewPrj * LampPostUbo.mMat[i * 4 + 3];
             // Calculates the normal matrix for the fourth lamp post
-            LampPostUbo.nMat[i * 4 + 3] = glm::inverse(glm::transpose(LampPostUbo.mMat[i * 4 + 3]));
-
+            LampPostUbo.nMat[i * 4 + 3] = LampPostMatrices[i * 4 + 3].nMat;
         }
 
 
@@ -1438,8 +1575,7 @@ protected:
 
             // Updates the matrices for the current tree, applying scale only for Tree1 and Tree4
             if (currentIndex != -1) {
-                bool applyScale = (currentIndex == 0 || currentIndex == 3); // Apply scale only for Tree1 and Tree4
-                updateTreeMatrices(&treeUbos[currentIndex], counterTree[currentIndex], i, offset, ViewPrj, applyScale);
+                updateTreeMatrices(currentIndex, &treeUbos[currentIndex], counterTree[currentIndex],ViewPrj);
             }
         }
 
@@ -1630,10 +1766,10 @@ protected:
 
 // Main function: The application runs here, and any errors will be caught and displayed
 int main() {
-    Application app;
-
     // Initialize skyscraper indices once at the start of the program
     initializeSkyScraperIndices();
+
+    Application app;
 
     try {
         app.run();  // Run the application
