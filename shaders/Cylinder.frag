@@ -67,5 +67,5 @@ void main() {
     vec3 color = Diffuse + Specular + ambientLight * BaseColor;
 
     // Output del colore finale
-    outColor = vec4(color, 1.0);
+    outColor = vec4(color, 0.4);
 }

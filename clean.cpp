@@ -787,6 +787,7 @@ protected:
                                     VK_CULL_MODE_BACK_BIT, false);
         PEmission.init(this, &VDEmission, "shaders/EmissionVert.spv", "shaders/EmissionFrag.spv", {&DSLEmission});
         PCylinderDelivery.init(this, &VDCylinderDelivery, "shaders/NormalMapVert.spv", "shaders/CylinderFrag.spv", {&DSLGlobal, &DSLCylinderDelivery});
+        PCylinderDelivery.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, true);
 
         // Load models from the specified paths. Each model is initialized with its respective VertexDescriptor and format.
         // The models include different objects such as scooter, city, soil, pizzeria, skyscrapers, trees, lamp post, and the skybox.
