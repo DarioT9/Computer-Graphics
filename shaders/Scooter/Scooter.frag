@@ -59,7 +59,7 @@ void main() {
 	float Roughness = texture(TScooterRoughness, fragUV).r;  // Roughness factor
 	float AmbientOcclusion = texture(TScooterAmbientOcclusion, fragUV).r; // AO factor
 
-	// --- Diffuse Lighting ---
+	// --- Lambertian Diffuse Lighting ---
 	float DiffInt = max(dot(N, lightDir), 0.0);
 	vec3 Diffuse = BaseColor * DiffInt * (1.0 - Metallic);  // Reduce diffuse if metallic
 

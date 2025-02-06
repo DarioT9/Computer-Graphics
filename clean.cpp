@@ -180,7 +180,6 @@ protected:
 
     // Descriptor layouts for specific objects in the scene
     DescriptorSetLayout DSLScooter;    // Descriptor layout for the Scooter object
-    DescriptorSetLayout DSLScooterFWheel; // Descriptor layout for the Scooter front wheel
     DescriptorSetLayout DSLCity;        // Descriptor layout for the City model
     DescriptorSetLayout DSLSoil;        // Descriptor layout for the Soil model
     DescriptorSetLayout DSLPizzeria;    // Descriptor layout for the Pizzeria model
@@ -194,7 +193,6 @@ protected:
 
     // Vertex descriptors for defining the layout of vertex data for various objects
     VertexDescriptor VDScooter;         // Vertex descriptor for the Scooter model
-    VertexDescriptor VDScooterFWheel;   // Vertex descriptor for the Scooter front wheel
     VertexDescriptor VDCity;            // Vertex descriptor for the City model
     VertexDescriptor VDSoil;            // Vertex descriptor for the Soil model
     VertexDescriptor VDPizzeria;        // Vertex descriptor for the Pizzeria model
@@ -208,7 +206,6 @@ protected:
 
     // Pipelines for rendering the various objects
     Pipeline PScooter;                  // Pipeline for rendering the Scooter
-    Pipeline PScooterFWheel;            // Pipeline for rendering the Scooter front wheel
     Pipeline PCity;                     // Pipeline for rendering the City
     Pipeline PSoil;                     // Pipeline for rendering the Soil
     Pipeline PPizzeria;                 // Pipeline for rendering the Pizzeria
@@ -225,7 +222,6 @@ protected:
 
     // Model and texture variables for different objects in the scene
     Model MScooter;                     // Model for the Scooter
-    Model MFWheel;                      // Model for the Scooter's front wheel
     Model MCity;                        // Model for the City
     Model MSoil;                        // Model for the Soil
     Model MPizzeria;                    // Model for the Pizzeria
@@ -252,7 +248,6 @@ protected:
 
     // Descriptor sets for the various objects
     DescriptorSet DSScooter;            // Descriptor set for the Scooter
-    DescriptorSet DSScooterFWheel;      // Descriptor set for the Scooter front wheel
     DescriptorSet DSCity;               // Descriptor set for the City
     DescriptorSet DSSoil;               // Descriptor set for the Soil
     DescriptorSet DSPizzeria;           // Descriptor set for the Pizzeria
@@ -800,14 +795,12 @@ protected:
         Mmoon.init(this, &VDEmission, "models/Moon/Sphere.obj", OBJ);
         MCylinderDelivery.init(this, &VDCylinderDelivery, "models/Cylinder/cylinder.gltf", GLTF);
         MParticle.init(this, &VDParticle, "models/Particle/quad.obj", OBJ);
-
-        // Load textures for various objects. Each texture is initialized with the respective file path.
-        // This includes textures for the scooter, city, soil, pizzeria, skyscrapers, trees, lamp post, skybox, and the moon.
-        TScooterBaseColor.init(this, "textures/Scooter/new/KR51BaseColor.png");
     }
 
+    // Load textures for various objects. Each texture is initialized with the respective file path.
+    // This includes textures for the scooter, city, soil, pizzeria, skyscrapers, trees, lamp post, skybox, and the moon.
     void TInitializations(){
-        TScooterBaseColor.init(this, "textures/scooter/new/KR51BaseColor.png");
+        TScooterBaseColor.init(this, "textures/Scooter/new/KR51BaseColor.png");
 
         // Normal map initialization with a special feature to support normal mapping.
         TScooterNormal.init(this, "textures/Scooter/new/KR51Normal.png", VK_FORMAT_R8G8B8A8_UNORM);
@@ -845,9 +838,9 @@ protected:
 
         Tmoon.init(this, "textures/Moon/moonmap.jpg");
 
-        TCylinderDelivery.init(this, "textures/Cylinder/yellow.jpg");
+        TCylinderDelivery.init(this, "textures/CylinderParticles/yellow.jpg");
 
-        TParticle.init(this, "textures/Cylinder/yellow.jpg");
+        TParticle.init(this, "textures/CylinderParticles/yellow.jpg");
     }
 
     // Here the Vulkan Models and Textures are loaded and set up.
@@ -876,11 +869,11 @@ protected:
 
         // Set up descriptor pool sizes based on the number of uniform blocks, textures, and descriptor sets required for the scene.
         DPSZs.uniformBlocksInPool =
-                1 + 2 + 2 + 2 + 2 + 8 + 8 + 2 + 1 + 1 + 2 + 1 + 2; // Total number of uniform blocks (for scooter, city, soil, pizzeria, etc.)
+                1 + 2 + 2 + 2 + 2 + 8 + 8 + 2 + 1 + 1 + 2 + 1 + 1; // Total number of uniform blocks (for scooter, city, soil, pizzeria, etc.)
         DPSZs.texturesInPool =
                 6 + 1 + 1 + 1 + 4 + 4 + 1 + 1 + 1 + 1 + 1; // Total number of textures (for scooter, city, soil, pizzeria, etc.)
         DPSZs.setsInPool = 1 + 1 + 1 + 1 + 4 + 4 + 1 + 1 + 1 +
-                           1 + 1 + 1 + 2; // Total number of descriptor sets (for scooter, city, soil, pizzeria, etc.)
+                           1 + 1 + 1 + 1; // Total number of descriptor sets (for scooter, city, soil, pizzeria, etc.)
 
         std::cout << "Initialization completed!\n";
         std::cout << "Uniform Blocks in the Pool  : " << DPSZs.uniformBlocksInPool << "\n";
