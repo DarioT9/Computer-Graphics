@@ -1,62 +1,61 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
 
-// Variabili ricevute dal Vertex Shader
-layout(location = 0) in vec3 fragPos;
-layout(location = 1) in vec3 fragNorm;
-layout(location = 2) in vec2 fragUV;
-layout(location = 3) in vec4 fragTan;  // Tangente del frammento
+// Variables received from the Vertex Shader
+layout(location = 0) in vec3 fragPos;   // Fragment position in world space
+layout(location = 1) in vec3 fragNorm;  // Fragment normal
+layout(location = 2) in vec2 fragUV;    // UV coordinates for texturing
+layout(location = 3) in vec4 fragTan;   // Fragment tangent
 
-// Output del colore calcolato
+// Output color computed by this shader
 layout(location = 0) out vec4 outColor;
 
-// Uniforms globali (luce e vista)
+// Global uniforms (light and view-related data)
 layout(set = 0, binding = 0) uniform GlobalUniformBufferObject {
-    vec3 lightDir;
-    vec4 lightColor;
-    vec3 eyePos;
+    vec3 lightDir;    // Directional light direction
+    vec4 lightColor;  // Light color and intensity
+    vec3 eyePos;      // Camera (eye) position in world space
 } gubo;
 
-// Uniform per la texture del colore della città
+// Texture uniform for the city surface color
 layout(set = 1, binding = 1) uniform sampler2D TSkyScraperBaseColor;
 
-// Shader principale
 void main() {
-    // Normali e Tangenti
+    // ---- Normal and Tangent Space Calculations ----
     vec3 Norm = normalize(fragNorm);
-    vec3 Tan = normalize(fragTan.xyz - Norm * dot(fragTan.xyz, Norm));  // Ortogonalizzazione della tangente
-    vec3 Bitan = cross(Norm, Tan) * fragTan.w;  // Bitangente usando la tangente e la normale
-    mat3 tbn = mat3(Tan, Bitan, Norm);  // Matrice TBN (Tangente, Bitangente, Normale)
+    vec3 Tan = normalize(fragTan.xyz - Norm * dot(fragTan.xyz, Norm)); // Orthogonalize tangent
+    vec3 Bitan = cross(Norm, Tan) * fragTan.w;  // Compute bitangent
+    mat3 tbn = mat3(Tan, Bitan, Norm);  // Create TBN matrix (Tangent, Bitangent, Normal)
 
-    // Normal map (se disponibile)
-    // Se avessi una normal map, qui si farebbe il campionamento e la trasformazione
-    // Per ora manteniamo solo la normale interpolata:
-    vec3 N = normalize(Norm);  // Usa la normale interpolata
+    // ---- Normal Mapping (if available) ----
+    // If a normal map was used, this is where sampling and transformation would happen.
+    // For now, we keep only the interpolated normal:
+    vec3 N = normalize(Norm);  // Use the interpolated normal
 
-    // Direzione della luce e dell'occhio
-    vec3 EyeDir = normalize(gubo.eyePos - fragPos);
-    vec3 lightDir = normalize(gubo.lightDir);
-    vec3 lightColor = gubo.lightColor.rgb;
+    // ---- Light and View Direction ----
+    vec3 EyeDir = normalize(gubo.eyePos - fragPos); // View direction
+    vec3 lightDir = normalize(gubo.lightDir); // Normalize light direction
+    vec3 lightColor = gubo.lightColor.rgb; // Extract RGB from light color
 
-    // Valori texture (solo base color per la città)
-    vec3 BaseColor = texture(TSkyScraperBaseColor, fragUV).rgb;
+    // ---- Texture Sampling ----
+    vec3 BaseColor = texture(TSkyScraperBaseColor, fragUV).rgb; // Sample base texture
 
-    // Illuminazione diffusa
+    // ---- Diffuse Lighting (Lambertian Reflection) ----
     float DiffInt = max(dot(N, lightDir), 0.0);
-    vec3 Diffuse = BaseColor * max(dot(N, lightDir), 0.0) * gubo.lightColor.rgb;
+    vec3 Diffuse = BaseColor * DiffInt * lightColor; // Diffuse component
 
-    // Riflessi speculari (Blinn-Phong semplice)
-    vec3 halfwayDir = normalize(lightDir + EyeDir);
-    float SpecInt = pow(max(dot(N, halfwayDir), 0.0), 8.0);  // Specularità fissa
+    // ---- Specular Highlights (Blinn-Phong Model) ----
+    vec3 halfwayDir = normalize(lightDir + EyeDir); // Halfway vector for Blinn-Phong
+    float SpecInt = pow(max(dot(N, halfwayDir), 0.0), 8.0); // Fixed shininess exponent
 
-    // Fattore Fresnel-Schlick (valore base per oggetti non metallici)
-    vec3 F0 = vec3(0.04);  // Fresnel di base per materiali dielettrici (non metallici)
-    vec3 Specular = lightColor * SpecInt * F0;
+    // ---- Fresnel-Schlick Approximation ----
+    vec3 F0 = vec3(0.04);  // Base Fresnel reflectance for non-metallic surfaces
+    vec3 Specular = lightColor * SpecInt * F0; // Apply Fresnel effect
 
-    // Luce ambientale fissa
-    vec3 ambientLight = vec3(1, 1, 1);
-    vec3 color = Diffuse + Specular + ambientLight * BaseColor;
+    // ---- Ambient Light ----
+    vec3 ambientLight = vec3(1, 1, 1); // WARNING: Fully white ambient light may overpower other effects
+    vec3 color = Diffuse + Specular + ambientLight * BaseColor; // Final color composition
 
-    // Output del colore finale
+    // Output final color
     outColor = vec4(color, 1.0);
 }

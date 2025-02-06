@@ -1,39 +1,40 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
 
-// The attributes associated with each vertex.
-// Their type and location must match the definition given in the
-// corresponding Vertex Descriptor, and in turn, with the CPP data structure
-layout(location = 0) in vec3 inPosition;
-layout(location = 1) in vec3 inNorm;
-layout(location = 2) in vec2 inUV;
-layout(location = 3) in vec4 inTan;
+// Vertex attributes received from the input mesh
+// These must match the locations defined in the Vertex Descriptor
+layout(location = 0) in vec3 inPosition; // Vertex position (in model space)
+layout(location = 1) in vec3 inNorm;     // Vertex normal (in model space)
+layout(location = 2) in vec2 inUV;       // UV texture coordinates
+layout(location = 3) in vec4 inTan;      // Tangent vector (for normal mapping)
 
-// this defines the variable passed to the Fragment Shader
-// the locations must match the one of its in variables
-layout(location = 0) out vec3 fragPos;
-layout(location = 1) out vec3 fragNorm;
-layout(location = 2) out vec2 fragUV;
-layout(location = 3) out vec4 fragTan;
+// Output variables sent to the Fragment Shader
+// These locations must match the corresponding input locations in the Fragment Shader
+layout(location = 0) out vec3 fragPos;  // Position in world space
+layout(location = 1) out vec3 fragNorm; // Normal in world space
+layout(location = 2) out vec2 fragUV;   // UV coordinates
+layout(location = 3) out vec4 fragTan;  // Tangent vector in world space (not used here)
 
-// Here the Uniform buffers are defined. In this case, the Transform matrices (Set 1, binding 0)
-// are used. Note that the definition must match the one used in the CPP code
-const int NLAMPPOST=256;
+// Maximum number of lamp posts (instances) supported
+const int NLAMPPOST = 256;
+
+// Uniform Buffer Object containing transformation matrices for instanced rendering
+// Each instance (lamp post) has its own set of transformation matrices
 layout(set = 1, binding = 0) uniform UniformBufferObject {
-	mat4 mvpMat[NLAMPPOST];
-	mat4 mMat[NLAMPPOST];
-	mat4 nMat[NLAMPPOST];
+	mat4 mvpMat[NLAMPPOST]; // Model-View-Projection matrix for each instance
+	mat4 mMat[NLAMPPOST];   // Model matrix (transforms from model space to world space)
+	mat4 nMat[NLAMPPOST];   // Normal matrix (for transforming normals correctly)
 } ubo;
 
-// Here the shader simply computes clipping coordinates, and passes to the Fragment Shader
-// the position of the point in World Space, the transformed direction of the normal vector,
-// and the untouched (but interpolated) UV coordinates
 void main() {
-	int i = gl_InstanceIndex ;
-	// Clipping coordinates must be returned in global variable gl_Posision
+	// Instance index determines which transformation matrix to use
+	int i = gl_InstanceIndex;
+
+	// Compute the final clip-space position by applying the MVP matrix for the current instance
 	gl_Position = ubo.mvpMat[i] * vec4(inPosition, 1.0);
-	// Here the value of the out variables passed to the Fragment shader are computed
-	fragPos = (ubo.mMat[i] * vec4(inPosition, 1.0)).xyz;
-	fragNorm = (ubo.nMat[i] * vec4(inNorm, 0.0)).xyz;
-	fragUV = inUV;
+
+	// Compute world-space attributes and pass them to the Fragment Shader
+	fragPos = (ubo.mMat[i] * vec4(inPosition, 1.0)).xyz; // Transform position to world space
+	fragNorm = (ubo.nMat[i] * vec4(inNorm, 0.0)).xyz;     // Transform normal to world space
+	fragUV = inUV;                                       // Pass UV coordinates unchanged
 }

@@ -23,12 +23,6 @@ struct ModelMatrices {
     glm::mat4 nMat;
 };
 
-// TextMaker instance for creating text
-TextMaker txt;
-
-// Vector of SingleText objects for output text
-std::vector<SingleText> outText = {{2, {"test", "", "", ""}, 0, 0}};
-
 // Struct representing a 2D bounding box (minimum and maximum points)
 struct BoundingBox {
     glm::vec2 min;  // Minimum coordinates (x, y)
@@ -767,18 +761,18 @@ protected:
         // Initialize the pipelines. Shaders are loaded from the specified files and use the newly defined VertexDescriptor.
         // Each pipeline is associated with its respective DescriptorSetLayout, such as DSLGlobal for the common descriptors
         // and specific layouts like DSLScooter, DSLCity, etc., for the unique objects.
-        PScooter.init(this, &VDScooter, "shaders/NormalMapVert.spv", "shaders/NormalMapFrag.spv",
+        PScooter.init(this, &VDScooter, "shaders/NormalMapVert.spv", "shaders/ScooterFrag.spv",
                       {&DSLGlobal, &DSLScooter});
         PCity.init(this, &VDCity, "shaders/NormalMapVert.spv", "shaders/CityFrag.spv", {&DSLGlobal, &DSLCity});
         PSoil.init(this, &VDSoil, "shaders/NormalMapVert.spv", "shaders/SoilFrag.spv", {&DSLGlobal, &DSLSoil});
-        PPizzeria.init(this, &VDPizzeria, "shaders/NormalMapVert.spv", "shaders/PizzeriaFrag.spv",
+        PPizzeria.init(this, &VDPizzeria, "shaders/NormalMapVert.spv", "shaders/CommonFrag.spv",
                        {&DSLGlobal, &DSLPizzeria});
         for (int i = 0; i < NTYPESKYSCRAPER; i++) {
-            PSkyScraper[i].init(this, &VDSkyScraper[i], "shaders/SkyScraperVert.spv", "shaders/SkyScraperFrag.spv",
+            PSkyScraper[i].init(this, &VDSkyScraper[i], "shaders/SkyScraperVert.spv", "shaders/CommonFrag.spv",
                                 {&DSLGlobal, &DSLSkyScraper[i]});
         }
         for (int i = 0; i < NTYPETREE; i++) {
-            PTree[i].init(this, &VDTree[i], "shaders/TreeVert.spv", "shaders/TreeFrag.spv", {&DSLGlobal, &DSLTree[i]});
+            PTree[i].init(this, &VDTree[i], "shaders/TreeVert.spv", "shaders/CommonFrag.spv", {&DSLGlobal, &DSLTree[i]});
         }
         PLampPost.init(this, &VDLampPost, "shaders/LampPostVert.spv", "shaders/LampPostFrag.spv",
                        {&DSLGlobal, &DSLLampPost});
@@ -1390,20 +1384,20 @@ protected:
         // Updates the global uniforms
         GlobalUniformBufferObject gubo{};
         gubo.lightDir = glm::vec3(-1.0f, 1.0f, 1.0f);  // Sets light direction
-        gubo.lightColor = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);    // Sets light color
+        gubo.lightColor = glm::vec4(0.04f, 0.04f, 0.08f, 1.0f);    // Sets light color
         gubo.eyePos = glm::vec3(glm::inverse(ViewMatrix) * glm::vec4(0, 3, 0, 1)); // Sets eye position
 
         // Setting point lights
         float LampPostLightIntensity = 2.5f;
         glm::vec3 LampPostLightColor = glm::vec3(1.0f, 0.85f, 0.4f);
         for(int i = 0; i < NLAMPPOST/4; i++) {
-            gubo.PointLights[i * 4].lightPosition = glm::vec3(75 - (24 * (i % 8)), 5.0, 85 - (24 * (i / 8)));
-//            gubo.PointLights[i * 4].lightPosition = PointLightPositions[i * 4];
+//            gubo.PointLights[i * 4].lightPosition = glm::vec3(75 - (24 * (i % 8)), 5.0, 85 - (24 * (i / 8)));
+            gubo.PointLights[i * 4].lightPosition = PointLightPositions[i * 4];
             gubo.PointLights[i * 4].lightColor = LampPostLightColor;
             gubo.PointLights[i * 4].lightIntensity = LampPostLightIntensity;
 
-            gubo.PointLights[i * 4 + 1].lightPosition = glm::vec3(84 - (24 * (i % 8)), 5.0, 75 - (24 * (i / 8)));
-//            gubo.PointLights[i * 4 + 1].lightPosition = PointLightPositions[i * 4 + 1];
+//            gubo.PointLights[i * 4 + 1].lightPosition = glm::vec3(84 - (24 * (i % 8)), 5.0, 75 - (24 * (i / 8)));
+            gubo.PointLights[i * 4 + 1].lightPosition = PointLightPositions[i * 4 + 1];
             gubo.PointLights[i * 4 + 1].lightColor = LampPostLightColor;
             gubo.PointLights[i * 4 + 1].lightIntensity = LampPostLightIntensity;
 

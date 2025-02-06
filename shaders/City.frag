@@ -1,99 +1,97 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
 
-// Variabili ricevute dal Vertex Shader
-layout(location = 0) in vec3 fragPos;
-layout(location = 1) in vec3 fragNorm;
-layout(location = 2) in vec2 fragUV;
-layout(location = 3) in vec4 fragTan;  // Tangente del frammento
-const int NLAMPPOST=256;
+// Inputs received from the Vertex Shader
+layout(location = 0) in vec3 fragPos;    // Fragment position in world space
+layout(location = 1) in vec3 fragNorm;   // Interpolated normal vector
+layout(location = 2) in vec2 fragUV;     // Texture coordinates
+layout(location = 3) in vec4 fragTan;    // Fragment tangent
 
-// Output del colore calcolato
+const int NLAMPPOST = 256;  // Maximum number of point lights
+
+// Output color computed by the fragment shader
 layout(location = 0) out vec4 outColor;
 
+// Structure to represent a point light source
 struct PointLight {
-    vec3 position;   // Posizione della luce
-    vec3 color;      // Colore della luce
-    float intensity; // Intensità della luce
-    float padding;   // Padding per allineamento
+    vec3 position;   // Light position in world space
+    vec3 color;      // Light color
+    float intensity; // Light intensity factor
+    float padding;   // Padding for alignment (unused)
 };
 
-// Uniforms globali (luce e vista)
+// Global uniforms (light and camera information)
 layout(set = 0, binding = 0) uniform GlobalUniformBufferObject {
-    vec3 lightDir;
-    vec4 lightColor;
-    vec3 eyePos;
-    PointLight PointLights[NLAMPPOST];
+    vec3 lightDir;   // Directional light direction
+    vec4 lightColor; // Directional light color
+    vec3 eyePos;     // Camera position in world space
+    PointLight PointLights[NLAMPPOST];  // Array of point lights
 } gubo;
 
-// Uniform per la texture del colore della città
+// Uniform for the city base color texture
 layout(set = 1, binding = 1) uniform sampler2D TCityBaseColor;
 
-
-// Shader principale
+// Main fragment shader
 void main() {
-    // Normali e Tangenti
+    // Compute Normal, Tangent, and Bitangent vectors
     vec3 Norm = normalize(fragNorm);
-    vec3 Tan = normalize(fragTan.xyz - Norm * dot(fragTan.xyz, Norm));  // Ortogonalizzazione della tangente
-    vec3 Bitan = cross(Norm, Tan) * fragTan.w;  // Bitangente usando la tangente e la normale
-    mat3 tbn = mat3(Tan, Bitan, Norm);  // Matrice TBN (Tangente, Bitangente, Normale)
+    vec3 Tan = normalize(fragTan.xyz - Norm * dot(fragTan.xyz, Norm)); // Orthogonalized tangent
+    vec3 Bitan = cross(Norm, Tan) * fragTan.w;  // Compute Bitangent
+    mat3 tbn = mat3(Tan, Bitan, Norm);  // TBN (Tangent, Bitangent, Normal) matrix
 
-    // Normal map (se disponibile)
-    // Se avessi una normal map, qui si farebbe il campionamento e la trasformazione
-    // Per ora manteniamo solo la normale interpolata:
-    vec3 N = normalize(Norm);  // Usa la normale interpolata
+    // Normal mapping (if available)
+    // Here, only the interpolated normal is used
+    vec3 N = normalize(Norm);
 
-    // Direzione della luce e dell'occhio
+    // Compute viewing direction and directional light properties
     vec3 EyeDir = normalize(gubo.eyePos - fragPos);
     vec3 lightDir = normalize(gubo.lightDir);
     vec3 lightColor = gubo.lightColor.rgb;
 
-    // Valori texture (solo base color per la città)
+    // Sample the base color texture for the city surface
     vec3 BaseColor = texture(TCityBaseColor, fragUV).rgb;
 
-    // Illuminazione diffusa
+    // Diffuse shading (Lambertian reflection)
     float DiffInt = max(dot(N, lightDir), 0.0);
-    vec3 Diffuse = BaseColor * max(dot(N, lightDir), 0.0) * gubo.lightColor.rgb;
+    vec3 Diffuse = BaseColor * DiffInt * lightColor;
 
-    // Riflessi speculari (Blinn-Phong semplice)
+    // Specular reflection using Blinn-Phong model
     vec3 halfwayDir = normalize(lightDir + EyeDir);
-    float SpecInt = pow(max(dot(N, halfwayDir), 0.0), 8.0);  // Specularità fissa
+    float SpecInt = pow(max(dot(N, halfwayDir), 0.0), 8.0);  // Fixed specular exponent
 
-    // Fattore Fresnel-Schlick (valore base per oggetti non metallici)
-    vec3 F0 = vec3(0.04);  // Fresnel di base per materiali dielettrici (non metallici)
+    // Fresnel-Schlick approximation (base value for non-metallic materials)
+    vec3 F0 = vec3(0.04);  // Default Fresnel reflection factor for dielectrics
     vec3 Specular = lightColor * SpecInt * F0;
 
-     // ---- Luci Puntiformi ----
+    // ---- Point Light Contribution ----
     vec3 diffusePointLight = vec3(0.0);
 
     for (int i = 0; i < NLAMPPOST; ++i) {
         PointLight light = gubo.PointLights[i];
 
-        vec3 pointLightDir = light.position.xyz - fragPos;
-        float distance = length(pointLightDir);  // Distance between the light and the fragment
-        float attenuation = 1.0 / (distance * distance);
-        float cosAngIncidence = max(dot(Norm, normalize(pointLightDir)), 0);
-        vec3 intensity = light.color.xyz * light.intensity * attenuation;
+        vec3 pointLightDir = light.position - fragPos;
+        float distance = length(pointLightDir);  // Compute distance to the light source
+        float attenuation = 1.0 / max(distance * distance, 0.01);   // Inverse square law
+        float cosAngIncidence = max(dot(N, normalize(pointLightDir)), 0.0);
+        vec3 intensity = light.color * light.intensity * attenuation;
 
-        // Calcolare l'angolo tra la direzione della luce e la direzione del punto
-        float angle = acos(dot(Norm, pointLightDir));
+        // Compute the angle between the light direction and the normal
+        float angle = acos(dot(Norm, normalize(pointLightDir)));
 
-        // Spotlight cone cutoff angle (in radians)
-        float cutoffAngle = radians(22.5);  // 22.5 degrees as the spotlight's cutoff angle
-        float softEdge = 0.2;  // The softness of the edge (increase this for a softer falloff)
+        // Spotlight cutoff angle (in radians)
+        float cutoffAngle = radians(22.5);  // Spotlight cone limit at 22.5 degrees
+        float softEdge = 0.2;  // Soft transition for the spotlight edge
 
-        // Use smoothstep for a smooth transition on the edge of the spotlight cone
+        // Smooth transition at the edge of the spotlight using smoothstep
         float spotEffect = smoothstep(cos(cutoffAngle + softEdge), cos(cutoffAngle), cosAngIncidence);
 
-        diffusePointLight += intensity * cosAngIncidence * spotEffect;  // Apply spotlight with smooth edge
-        
-
+        diffusePointLight += intensity * cosAngIncidence * spotEffect;  // Apply spotlight effect
     }
 
-    // Luce ambientale fissa
+    // Fixed ambient lighting to simulate global illumination
     vec3 ambientLight = vec3(0.05, 0.05, 0.05);
     vec3 color = diffusePointLight + Diffuse + Specular + ambientLight * BaseColor;
 
-    // Output del colore finale
+    // Final output color
     outColor = vec4(color, 1.0);
 }
