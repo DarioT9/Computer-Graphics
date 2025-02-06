@@ -16,6 +16,7 @@
 #define NLAMPPOST 256
 #define NPARTICLES 300
 
+//region Structs
 
 struct ModelMatrices {
     glm::mat4 mMat;
@@ -89,11 +90,6 @@ void generateUniqueRandomIndicesSkyscaper(int (&indices1)[NSKYSCRAPER], int (&in
     }
 }
 
-// Initialization function
-void initializeSkyScraperIndices() {
-    generateUniqueRandomIndicesSkyscaper(indicesSkyScraper1, indicesSkyScraper2, indicesSkyScraper3, indicesSkyScraper4);
-}
-
 // Arrays holding indices for each tree model
 int indicesTree1[16] = {3, 15, 8, 30, 12, 5, 26, 1, 9, 16, 22, 28, 37, 40, 49, 61};
 int indicesTree2[16] = {2, 6, 10, 18, 20, 25, 33, 41, 45, 50, 52, 53, 54, 56, 58, 60};
@@ -163,57 +159,12 @@ struct ModelOffsets {
     uint32_t indexCount;   // Number of indices for this model
 };
 
-// Function to calculate model offsets for each shape in the OBJ file
-std::vector<ModelOffsets> calculateOffsets(const std::string& filename) {
-    tinyobj::ObjReader reader;
-
-    // Parse the OBJ file
-    if (!reader.ParseFromFile(filename)) {
-        if (!reader.Error().empty()) {
-            std::cerr << "TinyObjReader Error: " << reader.Error() << std::endl;
-        }
-        throw std::runtime_error("Failed to parse OBJ file.");
-    }
-
-    const auto& attrib = reader.GetAttrib();
-    const auto& shapes = reader.GetShapes();
-
-    std::vector<ModelOffsets> modelOffsets;
-
-    uint32_t globalVertexOffset = 0;
-    uint32_t globalIndexOffset = 0;
-
-    // Iterate over each shape in the OBJ file
-    for (const auto& shape : shapes) {
-        ModelOffsets offsets;
-        offsets.name = shape.name;
-
-        offsets.vertexOffset = globalVertexOffset;
-        offsets.indexOffset = globalIndexOffset;
-        offsets.indexCount = static_cast<uint32_t>(shape.mesh.indices.size());
-
-        // Update cumulative offsets
-        // Note: Index data is reused; vertex data must advance by unique vertices used
-        std::set<int> uniqueVertices;
-        for (const auto& index : shape.mesh.indices) {
-            uniqueVertices.insert(index.vertex_index);
-        }
-        globalVertexOffset += static_cast<uint32_t>(uniqueVertices.size());
-        globalIndexOffset += offsets.indexCount;
-
-        modelOffsets.push_back(offsets);
-    }
-
-    return modelOffsets;
-}
-
+//endregion
 
 
 // MAIN
 class Application : public BaseProject {
 protected:
-
-    std::vector<ModelOffsets> ScooterOffsets;
 
     ModelMatrices CityMatrices;
     ModelMatrices SoilMatrices;
@@ -393,13 +344,8 @@ protected:
         Ar = (float)w / (float)h; // Update aspect ratio
     }
 
-
-    // Here the Vulkan Models and Textures are loaded and set up.
-// Descriptor set layouts are created and shaders are loaded for the pipelines.
-    void localInit() {
-
-        ScooterOffsets = calculateOffsets("models/Scooter/Scooter.obj");
-
+    // Function to generate mMats and nMats for single objects
+    void calculateSingleObjectsStaticMatrices(){
         CityMatrices.mMat = glm::mat4(1.0f);
         CityMatrices.nMat = glm::inverse(glm::transpose(CityMatrices.mMat));
 
@@ -407,19 +353,22 @@ protected:
         SoilMatrices.nMat = glm::inverse(glm::transpose(SoilMatrices.mMat));
 
         PizzeriaMatrices.mMat = glm::translate(glm::mat4(1.0f),
-                                                  glm::vec3(84.0f - (24.0f * (28 % 8)), 0.0f, 84.0f - (24.0f * (28 / 8))));
+                                               glm::vec3(84.0f - (24.0f * (28 % 8)), 0.0f, 84.0f - (24.0f * (28 / 8))));
         PizzeriaMatrices.mMat = glm::rotate(PizzeriaMatrices.mMat, glm::radians(-45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
         PizzeriaMatrices.mMat = glm::scale(PizzeriaMatrices.mMat, glm::vec3(1.5f, 1.5f, 1.5f));
         PizzeriaMatrices.nMat = glm::inverse(glm::transpose(PizzeriaMatrices.mMat));
 
         CylinderDeliveryMatrices.mMat = glm::mat4(1.0f);
         CylinderDeliveryMatrices.nMat = glm::inverse(glm::transpose(CylinderDeliveryMatrices.mMat));
+    }
 
+    // Function to generate mMats and nMats for sky scrapers
+    void calculateSkyScrapersStaticMatrices(){
         int currentIndex = -1;
         int counterSkyScraper[NTYPESKYSCRAPER] = {0, 0, 0, 0}; // Array of counters for skyscrapers
 
         // Loops over each skyscraper and updates their matrices
-        for (int i = 0; i < NSKYSCRAPER * 4; i++) {
+        for (int i = 0; i < NSKYSCRAPER * NTYPESKYSCRAPER; i++) {
             for (int j = 0; j < NSKYSCRAPER; j++) {
                 if (indicesSkyScraper1[j] == i) {
                     currentIndex = 0;
@@ -440,7 +389,7 @@ protected:
             if (currentIndex != -1) {
                 // Updates the model matrix for the current skyscraper
                 SkyScraperMatrices[currentIndex][counterSkyScraper[currentIndex]].mMat = glm::translate(glm::mat4(1.0f),
-                                                                                                    glm::vec3(84.0 - (24.0 * (i % 8)), 0.0, 84 - (24 * (i / 8))));
+                                                                                                        glm::vec3(84.0 - (24.0 * (i % 8)), 0.0, 84 - (24 * (i / 8))));
 
                 SkyScraperMatrices[currentIndex][counterSkyScraper[currentIndex]].mMat = glm::rotate(
                         SkyScraperMatrices[currentIndex][counterSkyScraper[currentIndex]].mMat,
@@ -459,7 +408,10 @@ protected:
                 counterSkyScraper[currentIndex]++;
             }
         }
+    }
 
+    // Function to generate mMats and nMats for lamp posts
+    void calculateLampPostsStaticMatrices(){
         for (int i = 0; i < NLAMPPOST / 4; i++){
             LampPostMatrices[i * 4].mMat =
                     glm::translate(glm::mat4(1.0f), glm::vec3(75 - (24 * (i % 8)), 0.0, 85 - (24 * (i / 8)))) *
@@ -487,12 +439,15 @@ protected:
             PointLightPositions[i * 4 + 2] = glm::vec3(93 - (24 * (i % 8)), 5.0f, 85 - (24 * (i / 8)));
             PointLightPositions[i * 4 + 3] = glm::vec3(84 - (24 * (i % 8)), 5.0f, 93 - (24 * (i / 8)));
         }
+    }
 
+    // Function to generate mMats and nMats for trees
+    void calculateTreesStaticMatrices(){
         // Initializes and sets up tree indices and counters for positioning and transformation
-        currentIndex = -1;
+        int currentIndex = -1;
         int offset = 6;
-        int counterTree[4] = {0, 0, 0, 0}; // Counter for each tree
-        int* indicesTree[4] = {indicesTree1, indicesTree2, indicesTree3, indicesTree4}; // Array of indices for trees
+        int counterTree[NTYPETREE] = {0, 0, 0, 0}; // Counter for each tree
+        int* indicesTree[NTYPETREE] = {indicesTree1, indicesTree2, indicesTree3, indicesTree4}; // Array of indices for trees
 
         // Iterates over all tree indices and updates the matrices for each tree
         for (int i = 0; i < NTREE; ++i) {
@@ -521,20 +476,9 @@ protected:
             }
         }
 
-//        for (int i = 0; i < NTREE; i++){
-//            if(i % 16 == 0){
-//                currentIndex++;
-//            }
-//            TreeMatrices[i].mMat = glm::translate(glm::mat4(1.0f),
-//                                                  glm::vec3(75.0f - (24.0f * (i % 8)), 0.0f, 85.0f - (24.0f * (i / 8)));
-//            TreeMatrices[i].mMat = glm::scale(TreeMatrices[i].mMat, glm::vec3(0.5f, 0.5f, 0.5f));
-//            TreeMatrices[i].nMat = glm::inverse(glm::transpose(TreeMatrices[i].mMat));
-//        }
+    }
 
-
-
-
-
+    void DSLInitializations(){
         // Initialize the Descriptor Layout for Global values.
         DSLGlobal.init(this, {
                 {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS, sizeof(GlobalUniformBufferObject),
@@ -624,8 +568,9 @@ protected:
                 {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0,                                           1},  // Base Color Texture
                 {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(ObjectParametersUniformBufferObject), 1},
         });
+    }
 
-
+    void VDInitializations(){
         // Initialize the Vertex Descriptor for the Scooter model with vertex attributes and input rate.
         VDScooter.init(this, {
                 {0, sizeof(ObjectVertex),
@@ -765,16 +710,16 @@ protected:
                 {0, sizeof(ObjectVertex),
                  VK_VERTEX_INPUT_RATE_VERTEX}  // Describes the size of the vertex and input rate
         }, {
-                            // Describes the vertex attribute layout
-                            {0, 0, VK_FORMAT_R32G32B32_SFLOAT,    offsetof(ObjectVertex,
-                                                                           pos),                sizeof(glm::vec3), POSITION},  // Position (3 float components)
-                            {0, 1, VK_FORMAT_R32G32B32_SFLOAT,    offsetof(ObjectVertex,
-                                                                           norm),               sizeof(glm::vec3), NORMAL},    // Normal (3 float components)
-                            {0, 2, VK_FORMAT_R32G32_SFLOAT,       offsetof(ObjectVertex,
-                                                                           UV),                 sizeof(glm::vec2), UV},             // UV (2 float components)
-                            {0, 3, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(ObjectVertex,
-                                                                           tan),                sizeof(glm::vec4), TANGENT}  // Tangent (4 float components)
-                    });
+                                        // Describes the vertex attribute layout
+                                        {0, 0, VK_FORMAT_R32G32B32_SFLOAT,    offsetof(ObjectVertex,
+                                                                                       pos),                sizeof(glm::vec3), POSITION},  // Position (3 float components)
+                                        {0, 1, VK_FORMAT_R32G32B32_SFLOAT,    offsetof(ObjectVertex,
+                                                                                       norm),               sizeof(glm::vec3), NORMAL},    // Normal (3 float components)
+                                        {0, 2, VK_FORMAT_R32G32_SFLOAT,       offsetof(ObjectVertex,
+                                                                                       UV),                 sizeof(glm::vec2), UV},             // UV (2 float components)
+                                        {0, 3, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(ObjectVertex,
+                                                                                       tan),                sizeof(glm::vec4), TANGENT}  // Tangent (4 float components)
+                                });
 
         // Initialize the Vertex Descriptor for the Particle model with vertex attributes and input rate.
         VDParticle.init(this, {
@@ -791,10 +736,12 @@ protected:
                                 {0, 3, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(ObjectVertex,
                                                                                tan),                sizeof(glm::vec4), TANGENT}  // Tangent (4 float components)
                         });
+    }
 
         // Initialize the pipelines. Shaders are loaded from the specified files and use the newly defined VertexDescriptor.
         // Each pipeline is associated with its respective DescriptorSetLayout, such as DSLGlobal for the common descriptors
         // and specific layouts like DSLScooter, DSLCity, etc., for the unique objects.
+    void PInitializations(){
         PScooter.init(this, &VDScooter, "shaders/CommonObjects/NormalMapVert.spv", "shaders/Scooter/ScooterFrag.spv",
                       {&DSLGlobal, &DSLScooter});
         PCity.init(this, &VDCity, "shaders/CommonObjects/NormalMapVert.spv", "shaders/City/CityFrag.spv", {&DSLGlobal, &DSLCity});
@@ -819,9 +766,12 @@ protected:
         PParticle.init(this, &VDParticle, "shaders/Particle/ParticleVert.spv", "shaders/Particle/ParticleFrag.spv", {&DSLGlobal, &DSLParticle});
         PParticle.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, false);
 
+    }
 
         // Load models from the specified paths. Each model is initialized with its respective VertexDescriptor and format.
         // The models include different objects such as scooter, city, soil, pizzeria, skyscrapers, trees, lamp post, and the skybox.
+
+    void MInitializations(){
         MScooter.init(this, &VDScooter, "models/Scooter/Scooter.obj", OBJ);
         MCity.init(this, &VDCity, "models/City/road.obj", OBJ);
         MSoil.init(this, &VDSoil, "models/Soil/sand3.obj", OBJ);
@@ -854,6 +804,10 @@ protected:
         // Load textures for various objects. Each texture is initialized with the respective file path.
         // This includes textures for the scooter, city, soil, pizzeria, skyscrapers, trees, lamp post, skybox, and the moon.
         TScooterBaseColor.init(this, "textures/Scooter/new/KR51BaseColor.png");
+    }
+
+    void TInitializations(){
+        TScooterBaseColor.init(this, "textures/scooter/new/KR51BaseColor.png");
 
         // Normal map initialization with a special feature to support normal mapping.
         TScooterNormal.init(this, "textures/Scooter/new/KR51Normal.png", VK_FORMAT_R8G8B8A8_UNORM);
@@ -868,16 +822,12 @@ protected:
 
         TCity.init(this, "textures/City/road.jpg");
 
-//        // Initialize the Soil texture with the custom sampler
-//        VkSampler soilSampler = setSoilTexture();
-//        TSoil.init(this, "textures/city/newSand.png");
-
         // Initialize the Soil texture with the image file
         TSoil.init(this, "textures/City/newSand.jpeg", VK_FORMAT_R8G8B8A8_SRGB, false);
         // Configure the Soil texture sampler for mirrored repeat wrapping
         TSoil.createTextureSampler(
                 VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT, VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT
-                );
+        );
 
 
         TPizzeria.init(this, "textures/Pizzeria/TPizzeria.jpeg");
@@ -898,6 +848,31 @@ protected:
         TCylinderDelivery.init(this, "textures/Cylinder/yellow.jpg");
 
         TParticle.init(this, "textures/Cylinder/yellow.jpg");
+    }
+
+    // Here the Vulkan Models and Textures are loaded and set up.
+// Descriptor set layouts are created and shaders are loaded for the pipelines.
+    void localInit() {
+
+        calculateSingleObjectsStaticMatrices();
+        calculateSkyScrapersStaticMatrices();
+        calculateLampPostsStaticMatrices();
+        calculateTreesStaticMatrices();
+
+        DSLInitializations();
+        VDInitializations();
+        // Initialize the pipelines. Shaders are loaded from the specified files and use the newly defined VertexDescriptor.
+        // Each pipeline is associated with its respective DescriptorSetLayout, such as DSLGlobal for the common descriptors
+        // and specific layouts like DSLScooter, DSLCity, etc., for the unique objects.
+        PInitializations();
+
+        // Load models from the specified paths. Each model is initialized with its respective VertexDescriptor and format.
+        // The models include different objects such as scooter, city, soil, pizzeria, skyscrapers, trees, lamp post, and the skybox.
+        MInitializations();
+
+        // Load textures for various objects. Each texture is initialized with the respective file path.
+        // This includes textures for the scooter, city, soil, pizzeria, skyscrapers, trees, lamp post, skybox, and the moon.
+        TInitializations();
 
         // Set up descriptor pool sizes based on the number of uniform blocks, textures, and descriptor sets required for the scene.
         DPSZs.uniformBlocksInPool =
@@ -1111,7 +1086,6 @@ protected:
     void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
 
         // Binding the pipeline, model, descriptor sets, and issuing the draw call for the scooter.
-        std::vector<ModelOffsets> ScooterOffsets = this->ScooterOffsets;
         PScooter.bind(commandBuffer);
         MScooter.bind(commandBuffer);
 
@@ -1649,18 +1623,13 @@ protected:
                            * glm::scale(glm::mat4(1.0f), glm::vec3(SkyBox_scale_factor, SkyBox_scale_factor, SkyBox_scale_factor)); // Scaling
 
         // Particle Matrices Update
-         placeParticlesInCircle(
-             glm::vec3(DeliveryPos.x + 1.5f, 1.0f, DeliveryPos.z + 1.5f),  // punto centrale
-             1.0f,                          // raggio
-             ParticleUbo,              // array di matrici modello
-             ViewPrj,                        // matrice view-projection
-             deltaT                          // tempo trascorso
-         );
-//        for (int i = 0; i < NPARTICLES; i++) {
-//            ParticleUbo.mMat[i] = glm::translate(glm::mat4(1.0f), glm::vec3(1.0f, 1.0f, 1.0f) + glm::vec3(i * 0.5f, 0.0f, 0.0f)); // Slightly offset for visibility
-//            ParticleUbo.mvpMat[i] = ViewPrj * ParticleUbo.mMat[i];
-//            ParticleUbo.nMat[i] = glm::inverse(glm::transpose(ParticleUbo.mMat[i]));
-//        }
+        placeParticlesInCircle(
+             glm::vec3(DeliveryPos.x + 1.5f, 1.0f, DeliveryPos.z + 1.5f),  // center point
+             1.0f,                          // radius
+             ParticleUbo,              // UBO for the particles
+             ViewPrj,                        // View Projection Matrix
+             deltaT                          // Delta time
+        );
 
         // Maps the Uniform Buffer Objects (UBOs) for each object to the corresponding DSL bindings
         DSScooter.map(currentImage, &ScooterUbo, 0);
@@ -1747,92 +1716,49 @@ protected:
     void placeParticlesInCircle(glm::vec3 centerPoint, float radius,
                                 ParticleMatricesUniformBufferObject& particleUbo,
                                 glm::mat4 viewProjectionMatrix, float deltaT) {
-        bool random = true;    // Flag per la generazione casuale delle particelle
-        int nParticlesPerRow = 100;  // Numero di particelle per riga
-        if (random) {
-            const float oscillationRadius = 0.2f;  // Raggio del movimento oscillatorio
-            const float oscillationSpeed = 5.0f;   // Velocità dell'oscillazione
-            static float totalTime = 0.0f;
-            static std::vector<int> rotationDirections;
-            static std::vector<float> phaseOffsets;
+        int nParticlesPerRow = 100;
+        const float oscillationRadius = 0.2f;
+        const float oscillationSpeed = 5.0f;
+        static float totalTime = 0.0f;
+        static std::vector<int> rotationDirections;
+        static std::vector<float> phaseOffsets;
 
-            // Inizializzazione delle direzioni
-            if (rotationDirections.empty()) {
-                rotationDirections.resize(NPARTICLES);
-                phaseOffsets.resize(NPARTICLES);
-                for (int i = 0; i < NPARTICLES; i++) {
-                    rotationDirections[i] = (rand() % 2) * 2 - 1; // -1 o 1
-                    phaseOffsets[i] = static_cast<float>(rand()) / RAND_MAX * glm::pi<float>();
-                }
-            }
-
-            totalTime += deltaT;
-
+        // Initialize the rotation directions and phase offsets for each particle
+        if (rotationDirections.empty()) {
+            rotationDirections.resize(NPARTICLES);
+            phaseOffsets.resize(NPARTICLES);
             for (int i = 0; i < NPARTICLES; i++) {
-                float baseAngle = (2.0f * glm::pi<float>() * i) / nParticlesPerRow;
-
-                // Base position on cylinder
-                float baseX = centerPoint.x + radius * std::cos(baseAngle);
-                float baseY = centerPoint.y - static_cast<int>(i / 100) * 0.5f;
-                float baseZ = centerPoint.z + radius * std::sin(baseAngle);
-
-                // Oscillation in the radial plane for each particle
-                float oscillationAngle = oscillationSpeed * totalTime * rotationDirections[i] + phaseOffsets[i];
-                // Oscillazione sul piano perpendicolare
-//                float tangentialX = -std::sin(baseAngle); // Vettore tangente
-//                float tangentialZ = std::cos(baseAngle);
-
-                float oscX = oscillationRadius * std::cos(oscillationAngle) * rotationDirections[i];
-                float oscY = oscillationRadius * std::sin(oscillationAngle);
-
-                // Compute crown trajectory
-                float x = baseX + oscX;// * tangentialX;
-                float y = baseY + oscY;
-                float z = baseZ;// + oscX;// + oscillationRadius * std::cos(oscillationAngle) * tangentialZ;
-
-                particleUbo.mMat[i] = glm::translate(glm::mat4(1.0f), glm::vec3(x, y, z));
-                particleUbo.mMat[i] = glm::rotate(particleUbo.mMat[i], 2.0f * glm::pi<float>() - baseAngle,
-                                                  glm::vec3(0.0f, 1.0f, 0.0f));
-
-                particleUbo.mvpMat[i] = viewProjectionMatrix * particleUbo.mMat[i];
-                particleUbo.nMat[i] = glm::inverse(glm::transpose(particleUbo.mMat[i]));
+                rotationDirections[i] = (rand() % 2) * 2 - 1; // -1 o 1
+                phaseOffsets[i] = static_cast<float>(rand()) / RAND_MAX * glm::pi<float>();
             }
         }
-        else {
-            // Parametri di movimento delle particelle
-            float angularVelocity = 1.0f;  // Velocità angolare in radianti/secondo
-            float verticalAmplitude = 0.5f;    // Ampiezza oscillazione verticale
-            float verticalFrequency = 2.0f;    // Frequenza oscillazione verticale
-            static float totalTime = 0.0f; // Tempo accumulato statico tra chiamate
-            totalTime += deltaT;  // Accumulazione del tempo
 
-            for (int i = 0; i < NPARTICLES; i++) {
-                // Calcola l'angolo per distribuire uniformemente le particelle
-                float baseAngle = (2.0f * glm::pi<float>() * i) / NPARTICLES;
-                float movementAngle = baseAngle + angularVelocity * totalTime;
+        totalTime += deltaT;
 
-                // Calcola le coordinate x e z sul cerchio
-                float x = centerPoint.x + radius * std::cos(movementAngle);
-                float z = centerPoint.z + radius * std::sin(movementAngle);
+        for (int i = 0; i < NPARTICLES; i++) {
+            float baseAngle = (2.0f * glm::pi<float>() * i) / nParticlesPerRow;
 
-                // Oscillazione verticale
-                float verticalOffset = verticalAmplitude * std::sin(verticalFrequency * totalTime);
-                float y = centerPoint.y;
-                if (i % 2 != 0) {
-                    verticalOffset = -verticalOffset;
-                    y += 2.0f;
-                }
-                y += verticalOffset;
+            // Base position on cylinder
+            float baseX = centerPoint.x + radius * std::cos(baseAngle);
+            float baseY = centerPoint.y - static_cast<int>(i / 100) * 0.5f;
+            float baseZ = centerPoint.z + radius * std::sin(baseAngle);
 
+            // Oscillation in the radial plane for each particle
+            float oscillationAngle = oscillationSpeed * totalTime * rotationDirections[i] + phaseOffsets[i];
+            float oscX = oscillationRadius * std::cos(oscillationAngle) * rotationDirections[i];
+            float oscY = oscillationRadius * std::sin(oscillationAngle);
 
-                particleUbo.mMat[i] = glm::translate(glm::mat4(1.0f), glm::vec3(x, y, z));
-                particleUbo.mMat[i] = glm::rotate(particleUbo.mMat[i], 2.0f * glm::pi<float>() - movementAngle,
-                                                  glm::vec3(0.0f, 1.0f, 0.0f));
+            // Compute crown trajectory
+            float x = baseX + oscX;
+            float y = baseY + oscY;
+            float z = baseZ;
 
-                particleUbo.mvpMat[i] = viewProjectionMatrix * particleUbo.mMat[i];
+            particleUbo.mMat[i] = glm::translate(glm::mat4(1.0f), glm::vec3(x, y, z));
+            particleUbo.mMat[i] = glm::rotate(particleUbo.mMat[i], 2.0f * glm::pi<float>() - baseAngle,
+                                              glm::vec3(0.0f, 1.0f, 0.0f));
 
-                particleUbo.nMat[i] = glm::inverse(glm::transpose(particleUbo.mMat[i]));
-            }
+            particleUbo.mvpMat[i] = viewProjectionMatrix * particleUbo.mMat[i];
+            particleUbo.nMat[i] = glm::inverse(glm::transpose(particleUbo.mMat[i]));
         }
     }
 
@@ -1941,7 +1867,7 @@ protected:
 // Main function: The application runs here, and any errors will be caught and displayed
 int main() {
     // Initialize skyscraper indices once at the start of the program
-    initializeSkyScraperIndices();
+    generateUniqueRandomIndicesSkyscaper(indicesSkyScraper1, indicesSkyScraper2, indicesSkyScraper3, indicesSkyScraper4);
 
     Application app;
 
