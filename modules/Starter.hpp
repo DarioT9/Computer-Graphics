@@ -680,12 +680,15 @@ std::cout << "Starting createInstance()\n"  << std::flush;
 		std::cout << "Physical devices found: " << deviceCount << "\n";
 		
 		for (const auto& device : devices) {
+            VkPhysicalDeviceProperties deviceProperties;
+            vkGetPhysicalDeviceProperties(device, &deviceProperties);
+
 			if(checkIfItHasDeviceExtension(device, "VK_KHR_portability_subset")) {
 				deviceExtensions.push_back("VK_KHR_portability_subset");
 			}
 						
 			bool suitable = isDeviceSuitable(device, devRep);
-			if (suitable) {
+			if (suitable && deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
 				physicalDevice = device;
 				msaaSamples = getMaxUsableSampleCount();
 				std::cout << "\n\nMaximum samples for anti-aliasing: " << msaaSamples << "\n\n\n";

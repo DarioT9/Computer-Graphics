@@ -18,7 +18,7 @@ layout(location = 3) out vec4 fragTan;
 
 // Here the Uniform buffers are defined. In this case, the Transform matrices (Set 1, binding 0)
 // are used. Note that the definition must match the one used in the CPP code
-const int NPARTICLES=3;
+const int NPARTICLES=300;
 layout(set = 1, binding = 0) uniform UniformBufferObject {
     mat4 mvpMat[NPARTICLES];
     mat4 mMat[NPARTICLES];

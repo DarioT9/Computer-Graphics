@@ -16,6 +16,7 @@
 #define NTREE 64
 #define NTYPETREE 4
 #define NLAMPPOST 256
+#define NPARTICLES 300
 
 
 struct ModelMatrices {
@@ -113,6 +114,12 @@ struct LampPostMatricesUniformBufferObject {
     alignas(16) glm::mat4 mvpMat[NLAMPPOST];  // Model-View-Projection matrix for each lamp post
     alignas(16) glm::mat4 mMat[NLAMPPOST];    // Model matrix for each lamp post
     alignas(16) glm::mat4 nMat[NLAMPPOST];    // Normal matrix for each lamp post
+};
+
+struct ParticleMatricesUniformBufferObject {
+    alignas(16) glm::mat4 mvpMat[NPARTICLES];  // Model-View-Projection matrix for each particle
+    alignas(16) glm::mat4 mMat[NPARTICLES];    // Model matrix for each particle
+    alignas(16) glm::mat4 nMat[NPARTICLES];    // Normal matrix for each particle
 };
 
 // Struct for skybox matrices (used for rendering the skybox)
@@ -234,6 +241,7 @@ protected:
     DescriptorSetLayout DSLskyBox;      // Descriptor layout for the SkyBox
     DescriptorSetLayout DSLEmission;    // Descriptor layout for emission materials
     DescriptorSetLayout DSLCylinderDelivery;    // Descriptor layout for CylinderDelivery
+    DescriptorSetLayout DSLParticle;    // Descriptor layout for Particles
 
     // Vertex descriptors for defining the layout of vertex data for various objects
     VertexDescriptor VDScooter;         // Vertex descriptor for the Scooter model
@@ -247,6 +255,7 @@ protected:
     VertexDescriptor VDskyBox;          // Vertex descriptor for the SkyBox
     VertexDescriptor VDEmission;        // Vertex descriptor for the emission model
     VertexDescriptor VDCylinderDelivery;    // Vertex descriptor fot the CylinderDelivery
+    VertexDescriptor VDParticle;        // Vertex descriptor for the Particles
 
     // Pipelines for rendering the various objects
     Pipeline PScooter;                  // Pipeline for rendering the Scooter
@@ -260,6 +269,7 @@ protected:
     Pipeline PskyBox;                   // Pipeline for rendering the SkyBox
     Pipeline PEmission;                 // Pipeline for rendering the emission objects
     Pipeline PCylinderDelivery;         // Pipeline for rendering the CylinderDelivery
+    Pipeline PParticle;                 // Pipeline for rendering the Particles
 
     // Models, textures, and descriptor sets for various objects
     DescriptorSet DSGlobal;             // Global descriptor set for uniforms like lighting and camera position
@@ -276,6 +286,7 @@ protected:
     Model MskyBox;                      // Model for the SkyBox
     Model Mmoon;                        // Model for the Moon (possibly for lighting)
     Model MCylinderDelivery;            // Model for the CylinderDelivery
+    Model MParticle;                    // Model for the Particles
 
     // Textures for the various objects in the scene
     Texture TScooterBaseColor, TScooterNormal, TScooterHeight, TScooterMetallic, TScooterRoughness, TScooterAmbientOcclusion; // Textures for the Scooter
@@ -288,6 +299,7 @@ protected:
     Texture TskyBox;                    // Texture for the SkyBox
     Texture Tmoon;                      // Texture for the Moon
     Texture TCylinderDelivery;          // Texture for the CylinderDelivery
+    Texture TParticle;                  // Texture for the Particles
 
     // Descriptor sets for the various objects
     DescriptorSet DSScooter;            // Descriptor set for the Scooter
@@ -301,6 +313,7 @@ protected:
     DescriptorSet DSskyBox;             // Descriptor set for the SkyBox
     DescriptorSet DSmoon;               // Descriptor set for the Moon
     DescriptorSet DSCylinderDelivery;   // Descriptor set for the CylinderDelivery
+    DescriptorSet DSParticle;           // Descriptor set for the Particles
 
     // Other application parameters for scene management and camera controls
     int currScene = 0;                  // Current scene index
@@ -607,6 +620,13 @@ protected:
                 {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(ObjectParametersUniformBufferObject),     1},
         });
 
+        // Initialize Descriptor Set Layout for the Particle object with uniform buffers and textures.
+        DSLParticle.init(this, {
+                {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         VK_SHADER_STAGE_VERTEX_BIT,   sizeof(ParticleMatricesUniformBufferObject), 1},  // Uniform matrix for the lamp post model
+                {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0,                                           1},  // Base Color Texture
+                {2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(ObjectParametersUniformBufferObject), 1},
+        });
+
 
         // Initialize the Vertex Descriptor for the Scooter model with vertex attributes and input rate.
         VDScooter.init(this, {
@@ -758,6 +778,22 @@ protected:
                                                                            tan),                sizeof(glm::vec4), TANGENT}  // Tangent (4 float components)
                     });
 
+        // Initialize the Vertex Descriptor for the Particle model with vertex attributes and input rate.
+        VDParticle.init(this, {
+                {0, sizeof(ObjectVertex),
+                 VK_VERTEX_INPUT_RATE_VERTEX}  // Describes the size of the vertex and input rate
+        }, {
+                                // Describes the vertex attribute layout
+                                {0, 0, VK_FORMAT_R32G32B32_SFLOAT,    offsetof(ObjectVertex,
+                                                                               pos),                sizeof(glm::vec3), POSITION},  // Position (3 float components)
+                                {0, 1, VK_FORMAT_R32G32B32_SFLOAT,    offsetof(ObjectVertex,
+                                                                               norm),               sizeof(glm::vec3), NORMAL},    // Normal (3 float components)
+                                {0, 2, VK_FORMAT_R32G32_SFLOAT,       offsetof(ObjectVertex,
+                                                                               UV),                 sizeof(glm::vec2), UV},             // UV (2 float components)
+                                {0, 3, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(ObjectVertex,
+                                                                               tan),                sizeof(glm::vec4), TANGENT}  // Tangent (4 float components)
+                        });
+
         // Initialize the pipelines. Shaders are loaded from the specified files and use the newly defined VertexDescriptor.
         // Each pipeline is associated with its respective DescriptorSetLayout, such as DSLGlobal for the common descriptors
         // and specific layouts like DSLScooter, DSLCity, etc., for the unique objects.
@@ -782,6 +818,9 @@ protected:
         PEmission.init(this, &VDEmission, "shaders/EmissionVert.spv", "shaders/EmissionFrag.spv", {&DSLEmission});
         PCylinderDelivery.init(this, &VDCylinderDelivery, "shaders/NormalMapVert.spv", "shaders/CylinderFrag.spv", {&DSLGlobal, &DSLCylinderDelivery});
         PCylinderDelivery.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, true);
+        PParticle.init(this, &VDParticle, "shaders/ParticleVert.spv", "shaders/ParticleFrag.spv", {&DSLGlobal, &DSLParticle});
+        PParticle.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, false);
+
 
         // Load models from the specified paths. Each model is initialized with its respective VertexDescriptor and format.
         // The models include different objects such as scooter, city, soil, pizzeria, skyscrapers, trees, lamp post, and the skybox.
@@ -812,6 +851,7 @@ protected:
         MskyBox.init(this, &VDskyBox, "models/SkyBoxCube.obj", OBJ);
         Mmoon.init(this, &VDEmission, "models/Sphere.obj", OBJ);
         MCylinderDelivery.init(this, &VDCylinderDelivery, "models/Cylinder/cylinder.gltf", GLTF);
+        MParticle.init(this, &VDParticle, "models/quad.obj", OBJ);
 
         // Load textures for various objects. Each texture is initialized with the respective file path.
         // This includes textures for the scooter, city, soil, pizzeria, skyscrapers, trees, lamp post, skybox, and the moon.
@@ -859,13 +899,15 @@ protected:
 
         TCylinderDelivery.init(this, "textures/cylinder/cylinder.jpg");
 
+        TParticle.init(this, "textures/particle.jpg");
+
         // Set up descriptor pool sizes based on the number of uniform blocks, textures, and descriptor sets required for the scene.
         DPSZs.uniformBlocksInPool =
-                1 + 2 + 2 + 2 + 2 + 8 + 8 + 2 + 1 + 1 + 2; // Total number of uniform blocks (for scooter, city, soil, pizzeria, etc.)
+                1 + 2 + 2 + 2 + 2 + 8 + 8 + 2 + 1 + 1 + 2 + 1; // Total number of uniform blocks (for scooter, city, soil, pizzeria, etc.)
         DPSZs.texturesInPool =
-                6 + 1 + 1 + 1 + 4 + 4 + 1 + 1 + 1 + 1; // Total number of textures (for scooter, city, soil, pizzeria, etc.)
+                6 + 1 + 1 + 1 + 4 + 4 + 1 + 1 + 1 + 1 + 1; // Total number of textures (for scooter, city, soil, pizzeria, etc.)
         DPSZs.setsInPool = 1 + 1 + 1 + 1 + 4 + 4 + 1 + 1 + 1 +
-                           1 + 1; // Total number of descriptor sets (for scooter, city, soil, pizzeria, etc.)
+                           1 + 1 + 1; // Total number of descriptor sets (for scooter, city, soil, pizzeria, etc.)
 
         std::cout << "Initialization completed!\n";
         std::cout << "Uniform Blocks in the Pool  : " << DPSZs.uniformBlocksInPool << "\n";
@@ -896,6 +938,7 @@ protected:
         PskyBox.create();
         PEmission.create();
         PCylinderDelivery.create();
+        PParticle.create();
 
         // Create descriptor sets for each object type with their respective textures.
         DSScooter.init(this, &DSLScooter,
@@ -914,6 +957,7 @@ protected:
         DSskyBox.init(this, &DSLskyBox, {&TskyBox});
         DSmoon.init(this, &DSLEmission, {&Tmoon});
         DSCylinderDelivery.init(this, &DSLCylinderDelivery, {&TCylinderDelivery});
+        DSParticle.init(this, &DSLParticle, {&TParticle});
 
         DSGlobal.init(this, &DSLGlobal, {});
     }
@@ -938,6 +982,7 @@ protected:
         PskyBox.cleanup();
         PEmission.cleanup();
         PCylinderDelivery.cleanup();
+        PParticle.cleanup();
 
         // Clean up the global descriptor set.
         DSGlobal.cleanup();
@@ -959,6 +1004,7 @@ protected:
         DSskyBox.cleanup();
         DSmoon.cleanup();
         DSCylinderDelivery.cleanup();
+        DSParticle.cleanup();
     }
 
     // This function handles the cleanup of models, textures, and Descriptor Set Layouts.
@@ -1016,6 +1062,10 @@ protected:
         TCylinderDelivery.cleanup();
         MCylinderDelivery.cleanup();
 
+        // Clean up texture and model resources for the particle
+        TParticle.cleanup();
+        MParticle.cleanup();
+
         // Clean up the global descriptor set layout.
         DSLGlobal.cleanup();
 
@@ -1036,6 +1086,7 @@ protected:
         DSLskyBox.cleanup();
         DSLEmission.cleanup();
         DSLCylinderDelivery.cleanup();
+        DSLParticle.cleanup();
 
         // Clean up the pipelines by destroying them completely.
         PScooter.destroy();
@@ -1054,6 +1105,7 @@ protected:
         PskyBox.destroy();
         PEmission.destroy();
         PCylinderDelivery.destroy();
+        PParticle.destroy();
     }
 
     // This function handles the population of the command buffer.
@@ -1164,6 +1216,18 @@ protected:
         // Draw call for the pizzeria.
         vkCmdDrawIndexed(commandBuffer,
                          static_cast<uint32_t>(MPizzeria.indices.size()), 1, 0, 0, 0);
+
+        // Binding the pipeline and model for the particle.
+        PParticle.bind(commandBuffer);                // Pipeline for the Particle
+        MParticle.bind(commandBuffer);                // Model for the Particle
+
+        // Binding global and specific descriptor sets for the Particle.
+        DSGlobal.bind(commandBuffer, PParticle, 0, currentImage);    // Global Descriptor Set for the Particle
+        DSParticle.bind(commandBuffer, PParticle, 1, currentImage);      // Specific Descriptor Set for the Particle
+
+        // Draw call for the Particle.
+        vkCmdDrawIndexed(commandBuffer,
+                         static_cast<uint32_t>(MParticle.indices.size()), NPARTICLES, 0, 0, 0);
 
         // Binding the pipeline and model for the cylinderDelivery.
         PCylinderDelivery.bind(commandBuffer);                // Pipeline for the CylinderDelivery
@@ -1447,6 +1511,9 @@ protected:
 
         skyBoxUniformBufferObject SkyBoxUbo{};
 
+        ParticleMatricesUniformBufferObject ParticleUbo{};
+        ObjectParametersUniformBufferObject ParticleParUbo{};
+
         // World and normal matrices should be identity, while the WVP matrix is variable (ViewPrj)
         ScooterUbo.mMat = Wm * glm::mat4(1.0f); // Sets model matrix for the scooter
         ScooterUbo.mvpMat = ViewPrj * ScooterUbo.mMat; // Calculates MVP matrix for the scooter
@@ -1583,6 +1650,20 @@ protected:
                            * glm::translate(glm::mat4(1.0f), skybox_center_offset) // Translation
                            * glm::scale(glm::mat4(1.0f), glm::vec3(SkyBox_scale_factor, SkyBox_scale_factor, SkyBox_scale_factor)); // Scaling
 
+        // Particle Matrices Update
+         placeParticlesInCircle(
+             glm::vec3(DeliveryPos.x + 1.5f, 1.0f, DeliveryPos.z + 1.5f),  // punto centrale
+             1.0f,                          // raggio
+             ParticleUbo,              // array di matrici modello
+             ViewPrj,                        // matrice view-projection
+             deltaT                          // tempo trascorso
+         );
+//        for (int i = 0; i < NPARTICLES; i++) {
+//            ParticleUbo.mMat[i] = glm::translate(glm::mat4(1.0f), glm::vec3(1.0f, 1.0f, 1.0f) + glm::vec3(i * 0.5f, 0.0f, 0.0f)); // Slightly offset for visibility
+//            ParticleUbo.mvpMat[i] = ViewPrj * ParticleUbo.mMat[i];
+//            ParticleUbo.nMat[i] = glm::inverse(glm::transpose(ParticleUbo.mMat[i]));
+//        }
+
         // Maps the Uniform Buffer Objects (UBOs) for each object to the corresponding DSL bindings
         DSScooter.map(currentImage, &ScooterUbo, 0);
         DSCity.map(currentImage, &CityUbo, 0);
@@ -1606,6 +1687,9 @@ protected:
         // Maps the UBO for the SkyBox
         DSskyBox.map(currentImage, &SkyBoxUbo, 0);
 
+        // Maps the UBO for the particles
+        DSParticle.map(currentImage, &ParticleUbo, 0);
+
         // Sets the specular power for each material's uniform buffer object
         float defaultPow = 200.0f;
         ScooterParUbo.Pow = defaultPow;
@@ -1613,6 +1697,7 @@ protected:
         SoilParUbo.Pow = defaultPow;
         PizzeriaParUbo.Pow = defaultPow;
         CylinderDeliveryParUbo.Pow = defaultPow;
+        ParticleParUbo.Pow = defaultPow;
         for (int i = 0; i < NTYPESKYSCRAPER; ++i) {
             skyScraperParamUbos[i].Pow = defaultPow;
         }
@@ -1628,6 +1713,7 @@ protected:
         SoilParUbo.Ang = defaultAngle;
         PizzeriaParUbo.Ang = defaultAngle;
         CylinderDeliveryParUbo.Ang = defaultAngle;
+        ParticleParUbo.Ang = defaultAngle;
         for (int i = 0; i < NTYPESKYSCRAPER; ++i) {
             skyScraperParamUbos[i].Ang = defaultAngle;
         }
@@ -1655,6 +1741,101 @@ protected:
 
         // Maps the material parameter UBO for the lamp posts
         DSLampPost.map(currentImage, &LampPostParUbo, 2);
+
+        // Maps the material parameter UBO for the particles
+        DSParticle.map(currentImage, &ParticleParUbo, 2);
+    }
+
+    void placeParticlesInCircle(glm::vec3 centerPoint, float radius,
+                                ParticleMatricesUniformBufferObject& particleUbo,
+                                glm::mat4 viewProjectionMatrix, float deltaT) {
+        bool random = true;    // Flag per la generazione casuale delle particelle
+        int nParticlesPerRow = 100;  // Numero di particelle per riga
+        if (random) {
+            const float oscillationRadius = 0.2f;  // Raggio del movimento oscillatorio
+            const float oscillationSpeed = 5.0f;   // Velocità dell'oscillazione
+            static float totalTime = 0.0f;
+            static std::vector<int> rotationDirections;
+            static std::vector<float> phaseOffsets;
+
+            // Inizializzazione delle direzioni
+            if (rotationDirections.empty()) {
+                rotationDirections.resize(NPARTICLES);
+                phaseOffsets.resize(NPARTICLES);
+                for (int i = 0; i < NPARTICLES; i++) {
+                    rotationDirections[i] = (rand() % 2) * 2 - 1; // -1 o 1
+                    phaseOffsets[i] = static_cast<float>(rand()) / RAND_MAX * glm::pi<float>();
+                }
+            }
+
+            totalTime += deltaT;
+
+            for (int i = 0; i < NPARTICLES; i++) {
+                float baseAngle = (2.0f * glm::pi<float>() * i) / nParticlesPerRow;
+
+                // Base position on cylinder
+                float baseX = centerPoint.x + radius * std::cos(baseAngle);
+                float baseY = centerPoint.y - static_cast<int>(i / 100) * 0.5f;
+                float baseZ = centerPoint.z + radius * std::sin(baseAngle);
+
+                // Oscillation in the radial plane for each particle
+                float oscillationAngle = oscillationSpeed * totalTime * rotationDirections[i] + phaseOffsets[i];
+                // Oscillazione sul piano perpendicolare
+//                float tangentialX = -std::sin(baseAngle); // Vettore tangente
+//                float tangentialZ = std::cos(baseAngle);
+
+                float oscX = oscillationRadius * std::cos(oscillationAngle) * rotationDirections[i];
+                float oscY = oscillationRadius * std::sin(oscillationAngle);
+
+                // Compute crown trajectory
+                float x = baseX + oscX;// * tangentialX;
+                float y = baseY + oscY;
+                float z = baseZ;// + oscX;// + oscillationRadius * std::cos(oscillationAngle) * tangentialZ;
+
+                particleUbo.mMat[i] = glm::translate(glm::mat4(1.0f), glm::vec3(x, y, z));
+                particleUbo.mMat[i] = glm::rotate(particleUbo.mMat[i], 2.0f * glm::pi<float>() - baseAngle,
+                                                  glm::vec3(0.0f, 1.0f, 0.0f));
+
+                particleUbo.mvpMat[i] = viewProjectionMatrix * particleUbo.mMat[i];
+                particleUbo.nMat[i] = glm::inverse(glm::transpose(particleUbo.mMat[i]));
+            }
+        }
+        else {
+            // Parametri di movimento delle particelle
+            float angularVelocity = 1.0f;  // Velocità angolare in radianti/secondo
+            float verticalAmplitude = 0.5f;    // Ampiezza oscillazione verticale
+            float verticalFrequency = 2.0f;    // Frequenza oscillazione verticale
+            static float totalTime = 0.0f; // Tempo accumulato statico tra chiamate
+            totalTime += deltaT;  // Accumulazione del tempo
+
+            for (int i = 0; i < NPARTICLES; i++) {
+                // Calcola l'angolo per distribuire uniformemente le particelle
+                float baseAngle = (2.0f * glm::pi<float>() * i) / NPARTICLES;
+                float movementAngle = baseAngle + angularVelocity * totalTime;
+
+                // Calcola le coordinate x e z sul cerchio
+                float x = centerPoint.x + radius * std::cos(movementAngle);
+                float z = centerPoint.z + radius * std::sin(movementAngle);
+
+                // Oscillazione verticale
+                float verticalOffset = verticalAmplitude * std::sin(verticalFrequency * totalTime);
+                float y = centerPoint.y;
+                if (i % 2 != 0) {
+                    verticalOffset = -verticalOffset;
+                    y += 2.0f;
+                }
+                y += verticalOffset;
+
+
+                particleUbo.mMat[i] = glm::translate(glm::mat4(1.0f), glm::vec3(x, y, z));
+                particleUbo.mMat[i] = glm::rotate(particleUbo.mMat[i], 2.0f * glm::pi<float>() - movementAngle,
+                                                  glm::vec3(0.0f, 1.0f, 0.0f));
+
+                particleUbo.mvpMat[i] = viewProjectionMatrix * particleUbo.mMat[i];
+
+                particleUbo.nMat[i] = glm::inverse(glm::transpose(particleUbo.mMat[i]));
+            }
+        }
     }
 
     bool checkCollision(glm::vec3& newCenterPos, glm::vec3 realPos, float angle, float halfLength, float halfWidth) {

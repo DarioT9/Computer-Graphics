@@ -63,7 +63,7 @@ void main() {
     vec3 Specular = lightColor * SpecInt * F0;
 
     // Luce ambientale fissa
-    vec3 ambientLight = vec3(0.1, 0.1, 0.2);
+    vec3 ambientLight = vec3(0.8, 0.8, 0.8);
     vec3 color = Diffuse + Specular + ambientLight * BaseColor;
 
     // Output del colore finale
