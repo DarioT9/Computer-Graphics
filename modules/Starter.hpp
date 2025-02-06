@@ -485,12 +485,15 @@ std::cout << "Starting createInstance()\n"  << std::flush;
 
 		createInfo.enabledLayerCount = 0;
 
-		auto extensions = getRequiredExtensions();
+        bool portabilityFlagRequired = false;
+		auto extensions = getRequiredExtensions(portabilityFlagRequired);
 		createInfo.enabledExtensionCount =
 			static_cast<uint32_t>(extensions.size());
-		createInfo.ppEnabledExtensionNames = extensions.data();		
+		createInfo.ppEnabledExtensionNames = extensions.data();
 
-		createInfo.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+        if (portabilityFlagRequired) {
+            createInfo.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+        }
 		
 		if (!checkValidationLayerSupport()) {
 			throw std::runtime_error("validation layers requested, but not available!");
@@ -512,30 +515,36 @@ std::cout << "Starting createInstance()\n"  << std::flush;
 			throw std::runtime_error("failed to create instance!");
 		}
     }
-    
-    std::vector<const char*> getRequiredExtensions() {
-		uint32_t glfwExtensionCount = 0;
-		const char** glfwExtensions;
-		glfwExtensions =
-			glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
-		std::vector<const char*> extensions(glfwExtensions,
-			glfwExtensions + glfwExtensionCount);
-			
-		extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);		
-		
-		if(checkIfItHasExtension(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME)) {
-			extensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+    std::vector<const char*> getRequiredExtensions(bool& portabilityFlagRequired) {
+        uint32_t glfwExtensionCount = 0;
+        const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
-		}
-		if(checkIfItHasExtension(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME)) {
-			extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
-		}
-		
-		return extensions;
-	}
-	
-	bool checkIfItHasExtension(const char *ext) {
+        // Copia le estensioni richieste da GLFW
+        std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+
+        // Estensione di debug per Vulkan
+        extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+
+        // Flag che indica se dobbiamo aggiungere il flag VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR
+        portabilityFlagRequired = false;
+
+        // Se l'estensione VK_KHR_portability_enumeration è disponibile, la aggiungiamo
+        if (checkIfItHasExtension(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME)) {
+            extensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+            portabilityFlagRequired = true;  // Imposta il flag per vkCreateInstance
+        }
+
+        // Se l'estensione VK_KHR_get_physical_device_properties_2 è disponibile, la aggiungiamo
+        if (checkIfItHasExtension(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME)) {
+            extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+        }
+
+        return extensions;
+    }
+
+
+    bool checkIfItHasExtension(const char *ext) {
 		uint32_t extCount;
 		vkEnumerateInstanceExtensionProperties(nullptr, &extCount, nullptr);
 
@@ -688,7 +697,7 @@ std::cout << "Starting createInstance()\n"  << std::flush;
 			}
 						
 			bool suitable = isDeviceSuitable(device, devRep);
-			if (suitable && deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
+			if (suitable/* && deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU*/) {
 				physicalDevice = device;
 				msaaSamples = getMaxUsableSampleCount();
 				std::cout << "\n\nMaximum samples for anti-aliasing: " << msaaSamples << "\n\n\n";

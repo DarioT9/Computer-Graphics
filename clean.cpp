@@ -2,8 +2,6 @@
 #include "modules/Starter.hpp"
 #include "WVP.hpp"
 
-#include "modules/TextMaker.hpp"
-
 #include <chrono>
 #include <algorithm>
 #include <random>
@@ -400,7 +398,7 @@ protected:
 // Descriptor set layouts are created and shaders are loaded for the pipelines.
     void localInit() {
 
-        ScooterOffsets = calculateOffsets("models/Scooter.obj");
+        ScooterOffsets = calculateOffsets("models/Scooter/Scooter.obj");
 
         CityMatrices.mMat = glm::mat4(1.0f);
         CityMatrices.nMat = glm::inverse(glm::transpose(CityMatrices.mMat));
@@ -797,117 +795,117 @@ protected:
         // Initialize the pipelines. Shaders are loaded from the specified files and use the newly defined VertexDescriptor.
         // Each pipeline is associated with its respective DescriptorSetLayout, such as DSLGlobal for the common descriptors
         // and specific layouts like DSLScooter, DSLCity, etc., for the unique objects.
-        PScooter.init(this, &VDScooter, "shaders/NormalMapVert.spv", "shaders/ScooterFrag.spv",
+        PScooter.init(this, &VDScooter, "shaders/CommonObjects/NormalMapVert.spv", "shaders/Scooter/ScooterFrag.spv",
                       {&DSLGlobal, &DSLScooter});
-        PCity.init(this, &VDCity, "shaders/NormalMapVert.spv", "shaders/CityFrag.spv", {&DSLGlobal, &DSLCity});
-        PSoil.init(this, &VDSoil, "shaders/NormalMapVert.spv", "shaders/SoilFrag.spv", {&DSLGlobal, &DSLSoil});
-        PPizzeria.init(this, &VDPizzeria, "shaders/NormalMapVert.spv", "shaders/CommonFrag.spv",
+        PCity.init(this, &VDCity, "shaders/CommonObjects/NormalMapVert.spv", "shaders/City/CityFrag.spv", {&DSLGlobal, &DSLCity});
+        PSoil.init(this, &VDSoil, "shaders/CommonObjects/NormalMapVert.spv", "shaders/Soil/SoilFrag.spv", {&DSLGlobal, &DSLSoil});
+        PPizzeria.init(this, &VDPizzeria, "shaders/CommonObjects/NormalMapVert.spv", "shaders/CommonObjects/CommonFrag.spv",
                        {&DSLGlobal, &DSLPizzeria});
         for (int i = 0; i < NTYPESKYSCRAPER; i++) {
-            PSkyScraper[i].init(this, &VDSkyScraper[i], "shaders/SkyScraperVert.spv", "shaders/CommonFrag.spv",
+            PSkyScraper[i].init(this, &VDSkyScraper[i], "shaders/SkyScraper/SkyScraperVert.spv", "shaders/CommonObjects/CommonFrag.spv",
                                 {&DSLGlobal, &DSLSkyScraper[i]});
         }
         for (int i = 0; i < NTYPETREE; i++) {
-            PTree[i].init(this, &VDTree[i], "shaders/TreeVert.spv", "shaders/CommonFrag.spv", {&DSLGlobal, &DSLTree[i]});
+            PTree[i].init(this, &VDTree[i], "shaders/Tree/TreeVert.spv", "shaders/CommonObjects/CommonFrag.spv", {&DSLGlobal, &DSLTree[i]});
         }
-        PLampPost.init(this, &VDLampPost, "shaders/LampPostVert.spv", "shaders/LampPostFrag.spv",
+        PLampPost.init(this, &VDLampPost, "shaders/LampPost/LampPostVert.spv", "shaders/LampPost/LampPostFrag.spv",
                        {&DSLGlobal, &DSLLampPost});
-        PskyBox.init(this, &VDskyBox, "shaders/SkyBoxVert.spv", "shaders/SkyBoxFrag.spv", {&DSLskyBox});
+        PskyBox.init(this, &VDskyBox, "shaders/SkyBox/SkyBoxVert.spv", "shaders/SkyBox/SkyBoxFrag.spv", {&DSLskyBox});
         PskyBox.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
                                     VK_CULL_MODE_BACK_BIT, false);
-        PEmission.init(this, &VDEmission, "shaders/EmissionVert.spv", "shaders/EmissionFrag.spv", {&DSLEmission});
-        PCylinderDelivery.init(this, &VDCylinderDelivery, "shaders/NormalMapVert.spv", "shaders/CylinderFrag.spv", {&DSLGlobal, &DSLCylinderDelivery});
+        PEmission.init(this, &VDEmission, "shaders/Emission/EmissionVert.spv", "shaders/Emission/EmissionFrag.spv", {&DSLEmission});
+        PCylinderDelivery.init(this, &VDCylinderDelivery, "shaders/CommonObjects/NormalMapVert.spv", "shaders/Cylinder/CylinderFrag.spv", {&DSLGlobal, &DSLCylinderDelivery});
         PCylinderDelivery.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, true);
-        PParticle.init(this, &VDParticle, "shaders/ParticleVert.spv", "shaders/ParticleFrag.spv", {&DSLGlobal, &DSLParticle});
+        PParticle.init(this, &VDParticle, "shaders/Particle/ParticleVert.spv", "shaders/Particle/ParticleFrag.spv", {&DSLGlobal, &DSLParticle});
         PParticle.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, false);
 
 
         // Load models from the specified paths. Each model is initialized with its respective VertexDescriptor and format.
         // The models include different objects such as scooter, city, soil, pizzeria, skyscrapers, trees, lamp post, and the skybox.
-        MScooter.init(this, &VDScooter, "models/Scooter.obj", OBJ);
-        MCity.init(this, &VDCity, "models/road.obj", OBJ);
-        MSoil.init(this, &VDSoil, "models/sand3.obj", OBJ);
+        MScooter.init(this, &VDScooter, "models/Scooter/Scooter.obj", OBJ);
+        MCity.init(this, &VDCity, "models/City/road.obj", OBJ);
+        MSoil.init(this, &VDSoil, "models/Soil/sand3.obj", OBJ);
         MPizzeria.init(this, &VDPizzeria, "models/Pizzeria/pizzeria.obj", OBJ);
         const char *modelPaths[NTYPESKYSCRAPER] = {
-                "models/apartment_1.mgcg",
-                "models/apartment_2.mgcg",
-                "models/apartment_3.mgcg",
-                "models/apartment_4.mgcg"
+                "models/SkyScraper/apartment_1.mgcg",
+                "models/SkyScraper/apartment_2.mgcg",
+                "models/SkyScraper/apartment_3.mgcg",
+                "models/SkyScraper/apartment_4.mgcg"
         };
         for (int i = 0; i < NTYPESKYSCRAPER; ++i) {
             MSkyScraper[i].init(this, &VDSkyScraper[i], modelPaths[i], MGCG);
         }
         const char *treeModelPaths[NTYPETREE] = {
-                "models/vegetation.021.mgcg",
-                "models/vegetation.023.mgcg",
-                "models/vegetation.024.mgcg",
-                "models/vegetation.025.mgcg"
+                "models/Tree/vegetation.021.mgcg",
+                "models/Tree/vegetation.023.mgcg",
+                "models/Tree/vegetation.024.mgcg",
+                "models/Tree/vegetation.025.mgcg"
         };
 
         for (int i = 0; i < NTYPETREE; ++i) {
             MTree[i].init(this, &VDTree[i], treeModelPaths[i], MGCG);
         }
         MLampPost.init(this, &VDLampPost, "models/LampPost/lampPost.obj", OBJ);
-        MskyBox.init(this, &VDskyBox, "models/SkyBoxCube.obj", OBJ);
-        Mmoon.init(this, &VDEmission, "models/Sphere.obj", OBJ);
+        MskyBox.init(this, &VDskyBox, "models/SkyBox/SkyBoxCube.obj", OBJ);
+        Mmoon.init(this, &VDEmission, "models/Moon/Sphere.obj", OBJ);
         MCylinderDelivery.init(this, &VDCylinderDelivery, "models/Cylinder/cylinder.gltf", GLTF);
-        MParticle.init(this, &VDParticle, "models/quad.obj", OBJ);
+        MParticle.init(this, &VDParticle, "models/Particle/quad.obj", OBJ);
 
         // Load textures for various objects. Each texture is initialized with the respective file path.
         // This includes textures for the scooter, city, soil, pizzeria, skyscrapers, trees, lamp post, skybox, and the moon.
-        TScooterBaseColor.init(this, "textures/scooter/new/KR51BaseColor.png");
+        TScooterBaseColor.init(this, "textures/Scooter/new/KR51BaseColor.png");
 
         // Normal map initialization with a special feature to support normal mapping.
-        TScooterNormal.init(this, "textures/scooter/new/KR51Normal.png", VK_FORMAT_R8G8B8A8_UNORM);
+        TScooterNormal.init(this, "textures/Scooter/new/KR51Normal.png", VK_FORMAT_R8G8B8A8_UNORM);
 
-        TScooterHeight.init(this, "textures/scooter/new/KR51Height.png");
+        TScooterHeight.init(this, "textures/Scooter/new/KR51Height.png");
 
-        TScooterMetallic.init(this, "textures/scooter/new/KR51Metallic.png");
+        TScooterMetallic.init(this, "textures/Scooter/new/KR51Metallic.png");
 
-        TScooterRoughness.init(this, "textures/scooter/new/KR51Roughness.png");
+        TScooterRoughness.init(this, "textures/Scooter/new/KR51Roughness.png");
 
-        TScooterAmbientOcclusion.init(this, "textures/scooter/new/KR51AO.png");
+        TScooterAmbientOcclusion.init(this, "textures/Scooter/new/KR51AO.png");
 
-        TCity.init(this, "textures/city/road.png");
+        TCity.init(this, "textures/City/road.jpg");
 
 //        // Initialize the Soil texture with the custom sampler
 //        VkSampler soilSampler = setSoilTexture();
 //        TSoil.init(this, "textures/city/newSand.png");
 
         // Initialize the Soil texture with the image file
-        TSoil.init(this, "textures/city/newSand.jpeg", VK_FORMAT_R8G8B8A8_SRGB, false);
+        TSoil.init(this, "textures/City/newSand.jpeg", VK_FORMAT_R8G8B8A8_SRGB, false);
         // Configure the Soil texture sampler for mirrored repeat wrapping
         TSoil.createTextureSampler(
                 VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT, VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT
                 );
 
 
-        TPizzeria.init(this, "textures/pizzeria/TPizzeria.jpeg");
+        TPizzeria.init(this, "textures/Pizzeria/TPizzeria.jpeg");
 
         for (int i = 0; i < NTYPESKYSCRAPER; i++) {
-            TSkyScraper[i].init(this, "textures/Textures_Skyscrapers.png");
+            TSkyScraper[i].init(this, "textures/SkyScraper/Textures_Skyscrapers.png");
         }
         for (int i = 0; i < NTYPETREE; i++) {
-            TTree[i].init(this, "textures/Textures_Vegetation.png");
+            TTree[i].init(this, "textures/Tree/Textures_Vegetation.png");
         }
 
         TLampPost.init(this, "textures/LampPost/lampPost1.png");
 
-        TskyBox.init(this, "textures/nightSkybox.jpg");
+        TskyBox.init(this, "textures/SkyBox/nightSkybox.jpg");
 
-        Tmoon.init(this, "textures/moon/moonmap.jpg");
+        Tmoon.init(this, "textures/Moon/moonmap.jpg");
 
-        TCylinderDelivery.init(this, "textures/cylinder/cylinder.jpg");
+        TCylinderDelivery.init(this, "textures/Cylinder/yellow.jpg");
 
-        TParticle.init(this, "textures/particle.jpg");
+        TParticle.init(this, "textures/Cylinder/yellow.jpg");
 
         // Set up descriptor pool sizes based on the number of uniform blocks, textures, and descriptor sets required for the scene.
         DPSZs.uniformBlocksInPool =
-                1 + 2 + 2 + 2 + 2 + 8 + 8 + 2 + 1 + 1 + 2 + 1; // Total number of uniform blocks (for scooter, city, soil, pizzeria, etc.)
+                1 + 2 + 2 + 2 + 2 + 8 + 8 + 2 + 1 + 1 + 2 + 1 + 2; // Total number of uniform blocks (for scooter, city, soil, pizzeria, etc.)
         DPSZs.texturesInPool =
                 6 + 1 + 1 + 1 + 4 + 4 + 1 + 1 + 1 + 1 + 1; // Total number of textures (for scooter, city, soil, pizzeria, etc.)
         DPSZs.setsInPool = 1 + 1 + 1 + 1 + 4 + 4 + 1 + 1 + 1 +
-                           1 + 1 + 1; // Total number of descriptor sets (for scooter, city, soil, pizzeria, etc.)
+                           1 + 1 + 1 + 2; // Total number of descriptor sets (for scooter, city, soil, pizzeria, etc.)
 
         std::cout << "Initialization completed!\n";
         std::cout << "Uniform Blocks in the Pool  : " << DPSZs.uniformBlocksInPool << "\n";
