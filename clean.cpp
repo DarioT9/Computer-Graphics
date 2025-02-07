@@ -1,3 +1,5 @@
+//region Libraries and Constants
+
 #include "headers/tiny_obj_loader.h"
 #include "modules/Starter.hpp"
 #include "WVP.hpp"
@@ -15,6 +17,8 @@
 #define NTYPETREE 4
 #define NLAMPPOST 256
 #define NPARTICLES 300
+
+//endregion
 
 //region Structs
 
@@ -166,6 +170,7 @@ struct ModelOffsets {
 class Application : public BaseProject {
 protected:
 
+    //region Parameters Initialization
     ModelMatrices CityMatrices;
     ModelMatrices SoilMatrices;
     ModelMatrices PizzeriaMatrices;
@@ -321,6 +326,9 @@ protected:
         ++counter;
     }
 
+    //endregion
+
+    //region Window Management
     // Set the main application parameters for the window and display
     void setWindowParameters() {
         // Set the window size, title, and initial background color
@@ -339,6 +347,9 @@ protected:
         Ar = (float)w / (float)h; // Update aspect ratio
     }
 
+    //endregion
+
+    //region Static mMats and nMats computation
     // Function to generate mMats and nMats for single objects
     void calculateSingleObjectsStaticMatrices(){
         CityMatrices.mMat = glm::mat4(1.0f);
@@ -357,7 +368,7 @@ protected:
         CylinderDeliveryMatrices.nMat = glm::inverse(glm::transpose(CylinderDeliveryMatrices.mMat));
     }
 
-    // Function to generate mMats and nMats for sky scrapers
+    // Function to generate mMats and nMats for SkyScrapers
     void calculateSkyScrapersStaticMatrices(){
         int currentIndex = -1;
         int counterSkyScraper[NTYPESKYSCRAPER] = {0, 0, 0, 0}; // Array of counters for skyscrapers
@@ -472,6 +483,10 @@ protected:
         }
 
     }
+
+    //endregion
+
+    //region Descriptor Set Layouts and Vertex Descriptors initialization
 
     void DSLInitializations(){
         // Initialize the Descriptor Layout for Global values.
@@ -733,6 +748,10 @@ protected:
                         });
     }
 
+    //endregion
+
+    //region Pipelines, Models and Textures initialization
+
         // Initialize the pipelines. Shaders are loaded from the specified files and use the newly defined VertexDescriptor.
         // Each pipeline is associated with its respective DescriptorSetLayout, such as DSLGlobal for the common descriptors
         // and specific layouts like DSLScooter, DSLCity, etc., for the unique objects.
@@ -843,8 +862,10 @@ protected:
         TParticle.init(this, "textures/CylinderParticles/yellow.jpg");
     }
 
+    //endregion
+
     // Here the Vulkan Models and Textures are loaded and set up.
-// Descriptor set layouts are created and shaders are loaded for the pipelines.
+    // Descriptor set layouts are created and shaders are loaded for the pipelines.
     void localInit() {
 
         calculateSingleObjectsStaticMatrices();
@@ -886,6 +907,8 @@ protected:
         // Set the initial position for the scooter.
         ScooterPos = glm::vec3(0.0f, 0.0f, 0.0f);
     }
+
+    //region Creation of Pipelines, Initialization of DSs, Cleanup/Destroy of Pipelines, DSs, Models, Textures
 
     // Create pipelines and descriptor sets.
     void pipelinesAndDescriptorSetsInit() {
@@ -1074,6 +1097,8 @@ protected:
         PParticle.destroy();
     }
 
+    //endregion
+
     // This function handles the population of the command buffer.
     // It sends all the objects to the GPU that need to be drawn, along with their buffers and textures.
     void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
@@ -1209,9 +1234,11 @@ protected:
 
 
     // This function handles the update of the uniform buffers.
-// It contains the logic for the application, including camera control, movement, and collision checks.
-
+    // It contains the logic for the application, including camera control, movement, and collision checks.
     void updateUniformBuffer(uint32_t currentImage) {
+
+        //region Camera and Input Handling
+
         static bool debounce = false;
         static int curDebounce = 0;
 
@@ -1234,6 +1261,10 @@ protected:
         static float CamRoll  = 0.0f;
         const glm::vec3 CamTargetDelta = glm::vec3(0,2,0);
         const glm::vec3 Cam1stPos = glm::vec3(0.49061f, 2.07f, 2.7445f);
+
+        //endregion
+
+        //region Scooter Management and Movements
 
         glm::vec3 CamPos = ScooterPos;
         static glm::vec3 dampedCamPos = CamPos;
@@ -1306,6 +1337,10 @@ protected:
             SteeringAng = 0.0f;
         }
 
+        //endregion
+
+        //region Delivery Management
+
         glm::vec3 deliveryStartPosition = glm::vec3(-2, 0, 0);
         float deliveryOffset = 3.0f;
 
@@ -1336,6 +1371,10 @@ protected:
             CylinderDeliveryMatrices.mMat = glm::scale(CylinderDeliveryMatrices.mMat, glm::vec3(1.0f, 1.0f, 100.0f));     // Scale on the z axis to make it high enough
             CylinderDeliveryMatrices.nMat = glm::inverse(glm::transpose(CylinderDeliveryMatrices.mMat));
         }
+
+        //endregion
+
+        //region Scooter Transformation, Scene Switching, and Camera Control
 
         glm::mat4 Mv;
 
@@ -1404,6 +1443,10 @@ protected:
             );
         }
 
+        //endregion
+
+        //region Uniforms for shaders
+
         // This section updates the uniforms used by the shaders
 
         glm::mat4 ViewPrj = M * Mv; // Calculates the view-projection matrix
@@ -1448,6 +1491,10 @@ protected:
         emissionUbo.mvpMat = ViewPrj * glm::translate(glm::mat4(1), gubo.lightDir * 145.0f) * baseTr; // Calculates emission matrix
         emissionUbo.mvpMat = glm::scale(emissionUbo.mvpMat, glm::vec3(8.0f, 8.0f, 8.0f)); // Scales the emission matrix
         DSmoon.map(currentImage, &emissionUbo, 0);
+
+        //endregion
+
+        //region UBO management
 
         // Initializes matrices and parameters for different objects
         SingleObjectMatricesUniformBufferObject ScooterUbo{};
@@ -1704,7 +1751,12 @@ protected:
 
         // Maps the material parameter UBO for the particles
         DSParticle.map(currentImage, &ParticleParUbo, 2);
+
+        //endregion
     }
+
+
+    //region Particles, Collision and Delivery utility functions
 
     void placeParticlesInCircle(glm::vec3 centerPoint, float radius,
                                 ParticleMatricesUniformBufferObject& particleUbo,
@@ -1854,6 +1906,7 @@ protected:
         return barriers;  // Return the list of generated barriers
     }
 
+    //endregion
 
 };
 
