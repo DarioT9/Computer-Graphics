@@ -812,7 +812,7 @@ protected:
         MLampPost.init(this, &VDLampPost, "models/LampPost/lampPost.obj", OBJ);
         MskyBox.init(this, &VDskyBox, "models/SkyBox/SkyBoxCube.obj", OBJ);
         Mmoon.init(this, &VDEmission, "models/Moon/Sphere.obj", OBJ);
-        MCylinderDelivery.init(this, &VDCylinderDelivery, "models/Cylinder/cylinder.gltf", GLTF);
+        MCylinderDelivery.init(this, &VDCylinderDelivery, "models/Cylinder/cylinder.obj", OBJ);
         MParticle.init(this, &VDParticle, "models/Particle/quad.obj", OBJ);
     }
 
@@ -1367,8 +1367,8 @@ protected:
                 ReturnToPizzeria = true;
             }
             CylinderDeliveryMatrices.mMat = glm::translate(glm::mat4(1.0f), glm::vec3(DeliveryPos.x + 1.5f, DeliveryPos.y, DeliveryPos.z + 1.5f));
-            CylinderDeliveryMatrices.mMat = glm::rotate(CylinderDeliveryMatrices.mMat, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-            CylinderDeliveryMatrices.mMat = glm::scale(CylinderDeliveryMatrices.mMat, glm::vec3(1.0f, 1.0f, 100.0f));     // Scale on the z axis to make it high enough
+//            CylinderDeliveryMatrices.mMat = glm::rotate(CylinderDeliveryMatrices.mMat, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+//            CylinderDeliveryMatrices.mMat = glm::scale(CylinderDeliveryMatrices.mMat, glm::vec3(1.0f, 1.0f, 100.0f));     // Scale on the z axis to make it high enough
             CylinderDeliveryMatrices.nMat = glm::inverse(glm::transpose(CylinderDeliveryMatrices.mMat));
         }
 
