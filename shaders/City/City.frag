@@ -13,7 +13,7 @@ const int NLAMPPOST = 256;  // Maximum number of point lights
 layout(location = 0) out vec4 outColor;
 
 // Structure to represent a point light source
-struct PointLight {
+struct SpotLight {
     vec3 position;   // Light position in world space
     vec3 color;      // Light color
     float intensity; // Light intensity factor
@@ -25,7 +25,7 @@ layout(set = 0, binding = 0) uniform GlobalUniformBufferObject {
     vec3 lightDir;   // Directional light direction
     vec4 lightColor; // Directional light color
     vec3 eyePos;     // Camera position in world space
-    PointLight PointLights[NLAMPPOST];  // Array of point lights
+    SpotLight SpotLights[NLAMPPOST];  // Array of spot lights
 } gubo;
 
 // Uniform for the city base color texture
@@ -57,26 +57,26 @@ void main() {
 
     // Specular reflection using Blinn-Phong model
     vec3 halfwayDir = normalize(lightDir + EyeDir);
-    float SpecInt = pow(max(dot(N, halfwayDir), 0.0), 8.0);  // Fixed specular exponent
+    float SpecInt = pow(max(dot(N, halfwayDir), 1.0), 8.0);  // Fixed specular exponent
 
-    // Fresnel-Schlick approximation (base value for non-metallic materials)
-    vec3 F0 = vec3(0.04);  // Default Fresnel reflection factor for dielectrics
-    vec3 Specular = lightColor * SpecInt * F0;
+    // Decay approximation
+    vec3 Decay = vec3(0.04);  // Default Decay factor for dielectrics
+    vec3 Specular = lightColor * SpecInt * Decay;
 
-    // ---- Point Light Contribution ----
-    vec3 diffusePointLight = vec3(0.0);
+    // ---- Spot Light Contribution ----
+    vec3 diffuseSpotLight = vec3(0.0);
 
     for (int i = 0; i < NLAMPPOST; ++i) {
-        PointLight light = gubo.PointLights[i];
+        SpotLight light = gubo.SpotLights[i];
 
-        vec3 pointLightDir = light.position - fragPos;
-        float distance = length(pointLightDir);  // Compute distance to the light source
+        vec3 spotLightDir = light.position - fragPos;
+        float distance = length(spotLightDir);  // Compute distance to the light source
         float attenuation = 1.0 / max(distance * distance, 0.01);   // Inverse square law
-        float cosAngIncidence = max(dot(N, normalize(pointLightDir)), 0.0);
+        float cosAngIncidence = max(dot(N, normalize(spotLightDir)), 0.0);
         vec3 intensity = light.color * light.intensity * attenuation;
 
         // Compute the angle between the light direction and the normal
-        float angle = acos(dot(Norm, normalize(pointLightDir)));
+        float angle = acos(dot(Norm, normalize(spotLightDir)));
 
         // Spotlight cutoff angle (in radians)
         float cutoffAngle = radians(22.5);  // Spotlight cone limit at 22.5 degrees
@@ -85,12 +85,12 @@ void main() {
         // Smooth transition at the edge of the spotlight using smoothstep
         float spotEffect = smoothstep(cos(cutoffAngle + softEdge), cos(cutoffAngle), cosAngIncidence);
 
-        diffusePointLight += intensity * cosAngIncidence * spotEffect;  // Apply spotlight effect
+        diffuseSpotLight += intensity * cosAngIncidence * spotEffect;  // Apply spotlight effect
     }
 
     // Fixed ambient lighting to simulate global illumination
     vec3 ambientLight = vec3(0.05, 0.05, 0.05);
-    vec3 color = diffusePointLight + Diffuse + Specular + ambientLight * BaseColor;
+    vec3 color = diffuseSpotLight + Diffuse + Specular + ambientLight * BaseColor;
 
     // Final output color
     outColor = vec4(color, 1.0);

@@ -48,9 +48,9 @@ void main() {
     vec3 halfwayDir = normalize(lightDir + EyeDir); // Halfway vector for Blinn-Phong
     float SpecInt = pow(max(dot(N, halfwayDir), 0.0), 8.0); // Specular intensity (fixed exponent)
 
-    // --- Fresnel-Schlick Approximation ---
-    vec3 F0 = vec3(0.04);  // Base reflectance for dielectrics (non-metallic surfaces)
-    vec3 Specular = lightColor * SpecInt * F0; // Final specular contribution
+    // --- Decay Approximation ---
+    vec3 Decay = vec3(1.0);  // Decay
+    vec3 Specular = lightColor * SpecInt * Decay; // Final specular contribution
 
     // --- Ambient Light (Constant) ---
     vec3 ambientLight = vec3(0.05, 0.05, 0.05); // Low ambient light contribution

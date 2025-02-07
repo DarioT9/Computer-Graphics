@@ -34,7 +34,7 @@ struct BoundingBox {
 };
 
 // Struct representing point lights to add to the global uniform
-struct PointLight {
+struct SpotLight {
     alignas(16) glm::vec3 lightPosition;
     alignas(16) glm::vec3 lightColor;
     float lightIntensity;
@@ -46,7 +46,7 @@ struct GlobalUniformBufferObject {
     alignas(16) glm::vec3 lightDir;  // Direction of light
     alignas(16) glm::vec4 lightColor; // Color of the light
     alignas(16) glm::vec3 eyePos;  // Eye (camera) position
-    PointLight PointLights[NLAMPPOST]; // Point lights
+    SpotLight SpotLights[NLAMPPOST]; // Point lights
 };
 
 // Struct for object matrices, including Model-View-Projection (MVP), Model, and Normal matrices
@@ -178,7 +178,7 @@ protected:
     ModelMatrices SkyScraperMatrices[NTYPESKYSCRAPER][NSKYSCRAPER];
     ModelMatrices TreeMatrices[NTYPETREE][NTREE];
     ModelMatrices LampPostMatrices[NLAMPPOST];
-    glm::vec3 PointLightPositions[NLAMPPOST];
+    glm::vec3 SpotLightPositions[NLAMPPOST];
 
     // Descriptor Layouts ["classes" of what will be passed to the shaders]
     DescriptorSetLayout DSLGlobal;	// For global values (lighting, camera, etc.)
@@ -440,10 +440,10 @@ protected:
         }
 
         for (int i = 0; i < NLAMPPOST / 4; i++){
-            PointLightPositions[i * 4] = glm::vec3(75 - (24 * (i % 8)), 5.0f, 85 - (24 * (i / 8)));
-            PointLightPositions[i * 4 + 1] = glm::vec3(84 - (24 * (i % 8)), 5.0f, 75 - (24 * (i / 8)));
-            PointLightPositions[i * 4 + 2] = glm::vec3(93 - (24 * (i % 8)), 5.0f, 85 - (24 * (i / 8)));
-            PointLightPositions[i * 4 + 3] = glm::vec3(84 - (24 * (i % 8)), 5.0f, 93 - (24 * (i / 8)));
+            SpotLightPositions[i * 4] = glm::vec3(75 - (24 * (i % 8)), 5.0f, 85 - (24 * (i / 8)));
+            SpotLightPositions[i * 4 + 1] = glm::vec3(84 - (24 * (i % 8)), 5.0f, 75 - (24 * (i / 8)));
+            SpotLightPositions[i * 4 + 2] = glm::vec3(93 - (24 * (i % 8)), 5.0f, 85 - (24 * (i / 8)));
+            SpotLightPositions[i * 4 + 3] = glm::vec3(84 - (24 * (i % 8)), 5.0f, 93 - (24 * (i / 8)));
         }
     }
 
@@ -772,13 +772,12 @@ protected:
         PLampPost.init(this, &VDLampPost, "shaders/LampPost/LampPostVert.spv", "shaders/LampPost/LampPostFrag.spv",
                        {&DSLGlobal, &DSLLampPost});
         PskyBox.init(this, &VDskyBox, "shaders/SkyBox/SkyBoxVert.spv", "shaders/SkyBox/SkyBoxFrag.spv", {&DSLskyBox});
-        PskyBox.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
-                                    VK_CULL_MODE_BACK_BIT, false);
+        PskyBox.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, false);
         PEmission.init(this, &VDEmission, "shaders/Emission/EmissionVert.spv", "shaders/Emission/EmissionFrag.spv", {&DSLEmission});
         PCylinderDelivery.init(this, &VDCylinderDelivery, "shaders/CommonObjects/NormalMapVert.spv", "shaders/Cylinder/CylinderFrag.spv", {&DSLGlobal, &DSLCylinderDelivery});
         PCylinderDelivery.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, true);
         PParticle.init(this, &VDParticle, "shaders/Particle/ParticleVert.spv", "shaders/Particle/ParticleFrag.spv", {&DSLGlobal, &DSLParticle});
-        PParticle.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, false);
+//        PParticle.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, false);
 
     }
 
@@ -1463,25 +1462,21 @@ protected:
         float LampPostLightIntensity = 2.5f;
         glm::vec3 LampPostLightColor = glm::vec3(1.0f, 0.85f, 0.4f);
         for(int i = 0; i < NLAMPPOST/4; i++) {
-//            gubo.PointLights[i * 4].lightPosition = glm::vec3(75 - (24 * (i % 8)), 5.0, 85 - (24 * (i / 8)));
-            gubo.PointLights[i * 4].lightPosition = PointLightPositions[i * 4];
-            gubo.PointLights[i * 4].lightColor = LampPostLightColor;
-            gubo.PointLights[i * 4].lightIntensity = LampPostLightIntensity;
+            gubo.SpotLights[i * 4].lightPosition = SpotLightPositions[i * 4];
+            gubo.SpotLights[i * 4].lightColor = LampPostLightColor;
+            gubo.SpotLights[i * 4].lightIntensity = LampPostLightIntensity;
 
-//            gubo.PointLights[i * 4 + 1].lightPosition = glm::vec3(84 - (24 * (i % 8)), 5.0, 75 - (24 * (i / 8)));
-            gubo.PointLights[i * 4 + 1].lightPosition = PointLightPositions[i * 4 + 1];
-            gubo.PointLights[i * 4 + 1].lightColor = LampPostLightColor;
-            gubo.PointLights[i * 4 + 1].lightIntensity = LampPostLightIntensity;
+            gubo.SpotLights[i * 4 + 1].lightPosition = SpotLightPositions[i * 4 + 1];
+            gubo.SpotLights[i * 4 + 1].lightColor = LampPostLightColor;
+            gubo.SpotLights[i * 4 + 1].lightIntensity = LampPostLightIntensity;
 
-//            gubo.PointLights[i * 4 + 2].lightPosition = glm::vec3(93 - (24 * (i % 8)), 5.0, 85 - (24 * (i / 8)));
-            gubo.PointLights[i * 4 + 2].lightPosition = PointLightPositions[i * 4 + 2];
-            gubo.PointLights[i * 4 + 2].lightColor = LampPostLightColor;
-            gubo.PointLights[i * 4 + 2].lightIntensity = LampPostLightIntensity;
+            gubo.SpotLights[i * 4 + 2].lightPosition = SpotLightPositions[i * 4 + 2];
+            gubo.SpotLights[i * 4 + 2].lightColor = LampPostLightColor;
+            gubo.SpotLights[i * 4 + 2].lightIntensity = LampPostLightIntensity;
 
-//            gubo.PointLights[i * 4 + 3].lightPosition = glm::vec3(84 - (24 * (i % 8)), 5.0, 93 - (24 * (i / 8)));
-            gubo.PointLights[i * 4 + 3].lightPosition = PointLightPositions[i * 4 + 3];
-            gubo.PointLights[i * 4 + 3].lightColor = LampPostLightColor;
-            gubo.PointLights[i * 4 + 3].lightIntensity = LampPostLightIntensity;
+            gubo.SpotLights[i * 4 + 3].lightPosition = SpotLightPositions[i * 4 + 3];
+            gubo.SpotLights[i * 4 + 3].lightColor = LampPostLightColor;
+            gubo.SpotLights[i * 4 + 3].lightIntensity = LampPostLightIntensity;
         }
 
         DSGlobal.map(currentImage, &gubo, 0); // Maps the global uniform buffer object

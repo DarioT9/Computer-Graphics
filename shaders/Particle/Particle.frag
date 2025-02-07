@@ -58,9 +58,9 @@ void main() {
     vec3 halfwayDir = normalize(lightDir + EyeDir);
     float SpecInt = pow(max(dot(N, halfwayDir), 0.0), 8.0);  // Fixed specular exponent
 
-    // Fresnel-Schlick approximation (base value for non-metallic materials)
-    vec3 F0 = vec3(0.04);  // Default Fresnel reflection factor for dielectrics
-    vec3 Specular = lightColor * SpecInt * F0;
+    // Decay approximation
+    vec3 Decay = vec3(0.04);  // Decay
+    vec3 Specular = lightColor * SpecInt * Decay;
 
     // Fixed ambient lighting to simulate global illumination
     vec3 ambientLight = vec3(0.8, 0.8, 0.8);

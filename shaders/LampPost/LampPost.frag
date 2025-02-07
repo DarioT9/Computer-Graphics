@@ -48,9 +48,9 @@ void main() {
     vec3 halfwayDir = normalize(lightDir + EyeDir); // Halfway vector for Blinn-Phong
     float SpecInt = pow(max(dot(N, halfwayDir), 0.0), 8.0); // Fixed shininess exponent
 
-    // ---- Fresnel-Schlick Approximation ----
-    vec3 F0 = vec3(0.04);  // Base Fresnel reflectance for non-metallic surfaces
-    vec3 Specular = lightColor * SpecInt * F0; // Apply Fresnel effect
+    // ---- Decay Approximation ----
+    vec3 Decay = vec3(1.0);  // Decay
+    vec3 Specular = lightColor * SpecInt * Decay;
 
     // ---- Ambient Light ----
     vec3 ambientLight = vec3(1, 1, 1); // WARNING: Fully white ambient light may overpower other effects

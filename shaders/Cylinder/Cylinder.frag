@@ -58,9 +58,9 @@ void main() {
     vec3 halfwayDir = normalize(lightDir + EyeDir);
     float SpecInt = pow(max(dot(N, halfwayDir), 0.0), 8.0);  // Specularità fissa
 
-    // Fattore Fresnel-Schlick (valore base per oggetti non metallici)
-    vec3 F0 = vec3(0.04);  // Fresnel di base per materiali dielettrici (non metallici)
-    vec3 Specular = lightColor * SpecInt * F0;
+    // Fattore Decay
+    vec3 Decay = vec3(0.04);  // Decay
+    vec3 Specular = lightColor * SpecInt * Decay;
 
     // Luce ambientale fissa
     vec3 ambientLight = vec3(1, 1, 1);
