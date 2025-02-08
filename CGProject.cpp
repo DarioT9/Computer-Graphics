@@ -155,14 +155,6 @@ struct EmissionVertex {
     glm::vec2 UV;   // Texture coordinates
 };
 
-// Structure to store model offsets (name, vertex offset, index offset, and index count)
-struct ModelOffsets {
-    std::string name;      // Name of the model
-    uint32_t vertexOffset; // Starting vertex offset in the buffer
-    uint32_t indexOffset;  // Starting index offset in the buffer
-    uint32_t indexCount;   // Number of indices for this model
-};
-
 //endregion
 
 
