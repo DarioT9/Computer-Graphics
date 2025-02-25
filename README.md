@@ -1,7 +1,3 @@
-To execute, just compile files, main file is `clean.cpp`.
+### Pizza Delivery ###
 
-Remember to compile shaders:
-```bash
-glslc Scooter.frag -o ScooterFrag.spv
-glslc NormalMapShader.vert -o NormalMapVert.spv
-```
+The goal of our project is to design and develop a virtual city environment. The primary objective is to create a game where the player assumes the role of a motorcycle, navigating the city. The gameplay will focus on delivering pizzas to various locations within the city.
